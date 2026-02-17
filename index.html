@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>📰 News Quiz</title>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --bg: #0a0e1a; --card: #111827; --border: #1f2937;
+  --accent: #38bdf8; --green: #22c55e; --red: #ef4444;
+  --text: #e2e8f0; --muted: #6b7280;
+  --de: #e8c84a; --world: #38bdf8;
+}
+body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; min-height: 100vh; }
+
+/* Header */
+header { text-align: center; padding: 1.75rem 1rem 1rem; border-bottom: 1px solid var(--border); }
+header h1 { font-size: 1.8rem; margin-bottom: .25rem; }
+header p { color: var(--muted); font-size: .9rem; }
+.date-badge { display: inline-block; margin-top: .5rem; padding: .2rem .7rem; background: #1f2937; border-radius: 99px; font-size: .78rem; color: var(--accent); }
+
+/* Category picker */
+.cat-picker { display: flex; gap: 1rem; justify-content: center; padding: 1.5rem 1rem; flex-wrap: wrap; }
+.cat-btn {
+  display: flex; flex-direction: column; align-items: center; gap: .5rem;
+  padding: 1.25rem 2.5rem; border-radius: 14px; cursor: pointer;
+  border: 2px solid var(--border); background: var(--card);
+  transition: all .25s; text-decoration: none; color: var(--text);
+}
+.cat-btn:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,.4); }
+.cat-btn.de { border-color: var(--de); }
+.cat-btn.de:hover { background: #1a1810; }
+.cat-btn.world { border-color: var(--world); }
+.cat-btn.world:hover { background: #0d1f2a; }
+.cat-emoji { font-size: 2.5rem; }
+.cat-label { font-weight: 700; font-size: 1.1rem; }
+.cat-sub { font-size: .8rem; color: var(--muted); }
+
+/* Game */
+.game { max-width: 1100px; margin: 0 auto; padding: 1rem 1rem 3rem; display: none; }
+.game.show { display: block; }
+
+/* Top bar */
+.topbar { display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap; }
+.back-btn {
+  padding: .4rem .8rem; background: transparent; border: 1px solid var(--border);
+  color: var(--muted); border-radius: 6px; cursor: pointer; font-size: .85rem;
+  transition: all .2s;
+}
+.back-btn:hover { border-color: var(--accent); color: var(--text); }
+.cat-indicator { font-weight: 700; font-size: 1rem; }
+.cat-indicator.de { color: var(--de); }
+.cat-indicator.world { color: var(--world); }
+.hud { display: flex; align-items: center; gap: .75rem; margin-left: auto; }
+.score-box { font-size: 1rem; font-weight: 600; }
+.progress { display: flex; gap: 5px; }
+.pip { width: 24px; height: 5px; border-radius: 3px; background: var(--border); transition: background .3s; }
+.pip.correct { background: var(--green); }
+.pip.wrong { background: var(--red); }
+
+/* Instructions */
+.instructions { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: .65rem 1rem; margin-bottom: 1rem; font-size: .83rem; color: var(--muted); }
+.instructions strong { color: var(--text); }
+
+/* Grid */
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+@media (max-width: 580px) { .grid { grid-template-columns: 1fr; } }
+
+.img-card {
+  border: 2px solid var(--border); border-radius: 12px; overflow: hidden;
+  cursor: pointer; position: relative; transition: border-color .2s, transform .2s;
+  background: var(--card);
+}
+.img-card img { width: 100%; aspect-ratio: 1; object-fit: cover; display: block; }
+.img-card .num {
+  position: absolute; top: 8px; left: 8px; width: 28px; height: 28px;
+  border-radius: 50%; background: rgba(0,0,0,.75); backdrop-filter: blur(4px);
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: .9rem;
+}
+.img-card.selected { border-color: var(--accent); transform: scale(1.025); }
+.img-card.correct  { border-color: var(--green); }
+.img-card.wrong    { border-color: var(--red); animation: shake .3s; }
+.img-card.solved   { pointer-events: none; }
+.solved-label {
+  position: absolute; bottom: 0; left: 0; right: 0; padding: .4rem .6rem;
+  font-size: .75rem; font-weight: 600; background: rgba(34,197,94,.88); color: #fff; display: none;
+}
+.img-card.correct .solved-label { display: block; }
+
+/* Headlines */
+.headlines { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; gap: .65rem; }
+@media (max-width: 580px) { .headlines { grid-template-columns: 1fr; } }
+
+.headline-btn {
+  background: var(--card); border: 2px solid var(--border); border-radius: 10px;
+  padding: .8rem 1rem; text-align: left; color: var(--text);
+  cursor: pointer; font-size: .875rem; line-height: 1.4; transition: all .2s;
+  display: flex; align-items: flex-start; gap: .6rem;
+}
+.headline-btn:hover:not(:disabled) { border-color: var(--accent); background: #1a2235; }
+.headline-btn.selected { border-color: var(--accent); background: #0d2040; }
+.headline-btn.correct  { border-color: var(--green); background: #052e16; pointer-events: none; }
+.headline-btn.wrong    { border-color: var(--red); background: #2a0a0a; }
+.headline-btn:disabled { opacity: .45; pointer-events: none; }
+.h-letter {
+  width: 22px; height: 22px; min-width: 22px; border-radius: 50%;
+  background: var(--border); display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: .75rem; margin-top: .1rem;
+}
+.headline-btn.correct .h-letter { background: var(--green); color: #fff; }
+.h-source { font-size: .72rem; color: var(--muted); margin-top: .25rem; }
+
+/* Result */
+.result-screen { display: none; text-align: center; padding: 3rem 1rem; }
+.result-screen.show { display: block; }
+.result-emoji { font-size: 3.5rem; margin-bottom: .75rem; }
+.result-screen h2 { font-size: 1.8rem; color: var(--accent); margin-bottom: .4rem; }
+.result-screen p { color: var(--muted); margin-bottom: 2rem; }
+.result-btns { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
+.btn { padding: .75rem 1.75rem; border-radius: 8px; font-size: .95rem; font-weight: 700; cursor: pointer; transition: opacity .2s; border: none; }
+.btn-primary { background: var(--accent); color: #0a0e1a; }
+.btn-secondary { background: var(--border); color: var(--text); }
+.btn:hover { opacity: .85; }
+
+@keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-5px)} 75%{transform:translateX(5px)} }
+
+/* Collage Mode */
+.collage-picker { display: flex; gap: 1rem; justify-content: center; padding: 1.5rem 1rem; flex-wrap: wrap; }
+.style-btn {
+  display: flex; flex-direction: column; align-items: center; gap: .5rem;
+  padding: 1rem 2rem; border-radius: 14px; cursor: pointer;
+  border: 2px solid var(--border); background: var(--card); transition: all .25s;
+  color: var(--text); min-width: 160px;
+}
+.style-btn:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,.4); }
+.style-btn.bosch   { border-color: #c084fc; }
+.style-btn.bosch:hover { background: #1a0f2a; }
+.style-btn.vangogh { border-color: #fbbf24; }
+.style-btn.vangogh:hover { background: #1a1500; }
+.style-emoji { font-size: 2rem; }
+.style-label { font-weight: 700; font-size: 1rem; }
+.style-sub { font-size: .78rem; color: var(--muted); }
+
+.collage-game { max-width: 1100px; margin: 0 auto; padding: 1rem 1rem 3rem; display: none; }
+.collage-game.show { display: block; }
+
+.collage-wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; align-items: start; }
+@media (max-width: 700px) { .collage-wrap { grid-template-columns: 1fr; } }
+
+.collage-img-box { border-radius: 12px; overflow: hidden; border: 2px solid var(--border); position: relative; }
+.collage-img-box img { width: 100%; display: block; }
+.collage-style-tag {
+  position: absolute; top: 10px; left: 10px;
+  padding: .25rem .65rem; border-radius: 99px; font-size: .75rem; font-weight: 700;
+  backdrop-filter: blur(6px);
+}
+.style-tag-bosch   { background: rgba(192,132,252,.85); color: #fff; }
+.style-tag-vangogh { background: rgba(251,191,36,.9); color: #1a1000; }
+
+.collage-options { display: flex; flex-direction: column; gap: .6rem; }
+.collage-hud { display: flex; justify-content: space-between; align-items: center; margin-bottom: .5rem; font-size: .85rem; color: var(--muted); }
+.collage-score { font-weight: 700; color: var(--accent); font-size: 1rem; }
+.opt-btn {
+  background: var(--card); border: 2px solid var(--border); border-radius: 9px;
+  padding: .7rem .9rem; text-align: left; color: var(--text);
+  cursor: pointer; font-size: .82rem; line-height: 1.4; transition: all .18s;
+  display: flex; align-items: flex-start; gap: .5rem;
+}
+.opt-btn:hover:not(:disabled):not(.locked) { border-color: var(--accent); background: #1a2235; }
+.opt-btn.chosen    { border-color: var(--accent); background: #0d2040; }
+.opt-btn.correct   { border-color: var(--green); background: #052e16; pointer-events: none; }
+.opt-btn.wrong-sel { border-color: var(--red); background: #2a0a0a; }
+.opt-btn.revealed  { border-color: var(--green); background: #031a0d; opacity: .7; pointer-events: none; }
+.opt-btn.locked    { opacity: .45; pointer-events: none; }
+.opt-btn:disabled  { pointer-events: none; }
+.opt-check { width: 20px; height: 20px; min-width: 20px; border-radius: 50%; border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: .75rem; margin-top: .1rem; transition: all .2s; }
+.opt-btn.chosen .opt-check    { background: var(--accent); border-color: var(--accent); color: #0a0e1a; }
+.opt-btn.correct .opt-check   { background: var(--green); border-color: var(--green); color: #fff; }
+.opt-btn.wrong-sel .opt-check { background: var(--red); border-color: var(--red); color: #fff; }
+.opt-btn.revealed .opt-check  { background: var(--green); border-color: var(--green); color: #fff; }
+.check-btn {
+  width: 100%; padding: .75rem; background: var(--accent); color: #0a0e1a;
+  border: none; border-radius: 8px; font-size: .95rem; font-weight: 700;
+  cursor: pointer; transition: opacity .2s; margin-top: .5rem;
+}
+.check-btn:disabled { background: var(--border); color: var(--muted); cursor: not-allowed; }
+.check-btn:not(:disabled):hover { opacity: .85; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>📰 News Quiz</h1>
+  <p>Ordne die Schlagzeilen den richtigen Bildern zu</p>
+  <span class="date-badge" id="date-badge">Lädt...</span>
+</header>
+
+<!-- Category Picker -->
+<div class="cat-picker" id="cat-picker">
+  <div class="cat-btn" style="border-color:#a78bfa" onclick="showCollagePicker()">
+    <div class="cat-emoji">🖼️</div>
+    <div class="cat-label">Collage</div>
+    <div class="cat-sub">4 stories in 1 image</div>
+  </div>
+  <div class="cat-btn de" onclick="startGame('germany')">
+    <div class="cat-emoji">🇩🇪</div>
+    <div class="cat-label">Germany</div>
+    <div class="cat-sub">Deutsche Nachrichten</div>
+  </div>
+  <div class="cat-btn world" onclick="startGame('world')">
+    <div class="cat-emoji">🌍</div>
+    <div class="cat-label">World</div>
+    <div class="cat-sub">Internationale News</div>
+  </div>
+</div>
+
+
+<!-- Collage Category Picker -->
+<div id="collage-cat-picker" style="display:none">
+  <div style="text-align:center;padding:1.25rem 1rem .5rem;color:var(--muted);font-size:.9rem">Choose a category &amp; art style:</div>
+  <div class="collage-picker">
+    <div class="style-btn bosch" onclick="startCollage('germany','bosch')">
+      <div class="style-emoji">🇩🇪🎨</div>
+      <div class="style-label">Germany</div>
+      <div class="style-sub">Hieronymus Bosch</div>
+    </div>
+    <div class="style-btn vangogh" onclick="startCollage('germany','vangogh')">
+      <div class="style-emoji">🇩🇪🌻</div>
+      <div class="style-label">Germany</div>
+      <div class="style-sub">Vincent van Gogh</div>
+    </div>
+    <div class="style-btn bosch" onclick="startCollage('world','bosch')">
+      <div class="style-emoji">🌍🎨</div>
+      <div class="style-label">World</div>
+      <div class="style-sub">Hieronymus Bosch</div>
+    </div>
+    <div class="style-btn vangogh" onclick="startCollage('world','vangogh')">
+      <div class="style-emoji">🌍🌻</div>
+      <div class="style-label">World</div>
+      <div class="style-sub">Vincent van Gogh</div>
+    </div>
+  </div>
+  <div style="text-align:center;padding:.5rem"><button class="back-btn" onclick="backToMainMenu()">← Back</button></div>
+</div>
+
+<!-- Collage Game -->
+<div class="collage-game" id="collage-game">
+  <div class="topbar">
+    <button class="back-btn" onclick="backToCollageMenu()">← Styles</button>
+    <span class="cat-indicator" id="collage-indicator"></span>
+    <div class="hud" style="margin-left:auto">
+      <div class="score-box">Found: <span id="collage-score">0</span>/4</div>
+    </div>
+  </div>
+  <div class="instructions">
+    <strong>Collage Mode:</strong> All 4 news stories are hidden in this artwork. Select the 4 correct headlines from the 8 options below!
+  </div>
+  <div class="collage-wrap">
+    <div class="collage-img-box">
+      <img id="collage-img" src="" alt="News Collage">
+      <span class="collage-style-tag" id="collage-style-tag"></span>
+    </div>
+    <div class="collage-options">
+      <div class="collage-hud">
+        <span>Select 4 headlines hidden in the image:</span>
+        <span class="collage-score"><span id="collage-chosen">0</span>/4 selected</span>
+      </div>
+      <div id="collage-opts"></div>
+      <button class="check-btn" id="collage-check" disabled onclick="checkCollage()">Check Answers</button>
+    </div>
+  </div>
+  <div class="result-screen" id="collage-result">
+    <div class="result-emoji" id="collage-result-emoji"></div>
+    <h2 id="collage-result-title"></h2>
+    <p id="collage-result-sub"></p>
+    <div class="result-btns">
+      <button class="btn btn-primary" onclick="restartCollage()">🔄 Try Again</button>
+      <button class="btn btn-secondary" onclick="backToCollageMenu()">← Styles</button>
+    </div>
+  </div>
+</div>
+
+<!-- Game Area -->
+<div class="game" id="game-area">
+  <div class="topbar">
+    <button class="back-btn" onclick="backToMenu()">← Kategorien</button>
+    <span class="cat-indicator" id="cat-indicator"></span>
+    <div class="hud">
+      <div class="score-box">Score: <span id="score">0</span>/4</div>
+      <div class="progress" id="progress"></div>
+    </div>
+  </div>
+  <div class="instructions">
+    <strong>Anleitung:</strong> Klick aufs Bild → dann auf die passende Schlagzeile. 4 richtige gewinnt!
+  </div>
+  <div class="grid" id="game-grid"></div>
+  <div class="result-screen" id="result-screen">
+    <div class="result-emoji" id="result-emoji"></div>
+    <h2 id="result-title"></h2>
+    <p id="result-sub"></p>
+    <div class="result-btns">
+      <button class="btn btn-primary" onclick="restartGame()">🔄 Nochmal</button>
+      <button class="btn btn-secondary" onclick="backToMenu()">← Kategorien</button>
+    </div>
+    <br>
+    <a href="/" style="color:var(--muted);font-size:.8rem;">← Startseite</a>
+  </div>
+</div>
+
+<script>
+let quizData = null;
+let currentCat = null;
+let shuffledImages = [], shuffledHeadlines = [];
+let selectedImg = null, selectedHl = null;
+let score = 0, attempts = 0;
+const pips = [];
+
+function shuffle(a) {
+  const b = [...a];
+  for (let i = b.length-1; i > 0; i--) { const j = Math.floor(Math.random()*(i+1)); [b[i],b[j]]=[b[j],b[i]]; }
+  return b;
+}
+
+async function init() {
+  const res = await fetch('quiz-data.json?t=' + Date.now());
+  quizData = await res.json();
+  const d = new Date(quizData.date + 'T00:00:00');
+  document.getElementById('date-badge').textContent = d.toLocaleDateString('de-DE', {day:'numeric',month:'long',year:'numeric'});
+}
+
+function startGame(cat) {
+  currentCat = cat;
+  score = 0; attempts = 0;
+  shuffledImages = shuffle(quizData.categories[cat]);
+  shuffledHeadlines = shuffle(quizData.categories[cat]);
+  selectedImg = null; selectedHl = null;
+
+  document.getElementById('cat-picker').style.display = 'none';
+  const area = document.getElementById('game-area');
+  area.classList.add('show');
+
+  const ind = document.getElementById('cat-indicator');
+  ind.textContent = cat === 'germany' ? '🇩🇪 Germany' : '🌍 World';
+  ind.className = 'cat-indicator ' + cat;
+
+  document.getElementById('score').textContent = '0';
+  document.getElementById('result-screen').classList.remove('show');
+  document.getElementById('game-grid').style.display = '';
+
+  buildProgress();
+  buildGrid();
+}
+
+function backToMenu() {
+  document.getElementById('cat-picker').style.display = 'flex';
+  document.getElementById('game-area').classList.remove('show');
+  pips.length = 0;
+}
+
+function restartGame() { startGame(currentCat); }
+
+function buildProgress() {
+  const el = document.getElementById('progress');
+  el.innerHTML = '';
+  pips.length = 0;
+  for (let i = 0; i < 4; i++) {
+    const pip = document.createElement('div');
+    pip.className = 'pip';
+    el.appendChild(pip); pips.push(pip);
+  }
+}
+
+function buildGrid() {
+  const grid = document.getElementById('game-grid');
+  grid.innerHTML = '';
+
+  shuffledImages.forEach((item, i) => {
+    const card = document.createElement('div');
+    card.className = 'img-card';
+    card.dataset.idx = i;
+    card.innerHTML = `<img src="${item.image}" alt="News ${i+1}" loading="lazy"><div class="num">${i+1}</div><div class="solved-label">✓ ${item.source}</div>`;
+    card.addEventListener('click', () => onImgClick(i, card));
+    grid.appendChild(card);
+  });
+
+  const hlBox = document.createElement('div');
+  hlBox.className = 'headlines';
+  const letters = ['A','B','C','D'];
+
+  shuffledHeadlines.forEach((item, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'headline-btn';
+    btn.dataset.idx = i;
+    btn.innerHTML = `<span class="h-letter">${letters[i]}</span><span>${item.headline}<div class="h-source">${item.source}</div></span>`;
+    btn.addEventListener('click', () => onHlClick(i, btn));
+    hlBox.appendChild(btn);
+  });
+
+  grid.appendChild(hlBox);
+}
+
+function onImgClick(idx, card) {
+  if (card.classList.contains('correct')) return;
+  document.querySelectorAll('.img-card.selected').forEach(c => c.classList.remove('selected'));
+  selectedImg = idx;
+  card.classList.add('selected');
+  tryMatch();
+}
+
+function onHlClick(idx, btn) {
+  if (btn.classList.contains('correct') || btn.disabled) return;
+  document.querySelectorAll('.headline-btn.selected').forEach(b => b.classList.remove('selected'));
+  selectedHl = idx;
+  btn.classList.add('selected');
+  tryMatch();
+}
+
+function tryMatch() {
+  if (selectedImg === null || selectedHl === null) return;
+
+  const imgItem = shuffledImages[selectedImg];
+  const hlItem  = shuffledHeadlines[selectedHl];
+  const imgCard = document.querySelector(`.img-card[data-idx="${selectedImg}"]`);
+  const hlBtn   = document.querySelector(`.headline-btn[data-idx="${selectedHl}"]`);
+  const correct = imgItem.id === hlItem.id;
+  attempts++;
+
+  if (correct) {
+    imgCard.classList.remove('selected'); imgCard.classList.add('correct', 'solved');
+    hlBtn.classList.remove('selected'); hlBtn.classList.add('correct');
+    score++; pips[score-1].classList.add('correct');
+    document.getElementById('score').textContent = score;
+    if (score === 4) setTimeout(showResult, 500);
+  } else {
+    imgCard.classList.add('wrong'); hlBtn.classList.add('wrong');
+    if (attempts <= 4) pips[attempts-1].classList.add('wrong');
+    setTimeout(() => {
+      imgCard.classList.remove('wrong','selected');
+      hlBtn.classList.remove('wrong','selected');
+    }, 650);
+  }
+  selectedImg = null; selectedHl = null;
+}
+
+function showResult() {
+  document.getElementById('game-grid').style.display = 'none';
+  const screen = document.getElementById('result-screen');
+  screen.classList.add('show');
+  const emojis  = ['😅','🤔','👍','🎉','🏆'];
+  const titles  = ['Knapp daneben!','Solide!','Gut gemacht!','Fast perfekt!','Perfekt!'];
+  const subs    = ['Probier\'s nochmal!','Du lernst die Welt kennen.','Du kennst dich aus!','Nur eine daneben!','Du verfolgst die News genau!'];
+  const idx = Math.min(score, 4);
+  document.getElementById('result-emoji').textContent = emojis[idx];
+  document.getElementById('result-title').textContent = titles[idx];
+  document.getElementById('result-sub').textContent = `${score} von 4 richtig${attempts > 4 ? ` (${attempts} Versuche)` : ''}. ${subs[idx]}`;
+}
+
+init().catch(() => {
+  document.querySelector('body').innerHTML += '<p style="color:#ef4444;text-align:center;padding:3rem">Quiz konnte nicht geladen werden.</p>';
+});
+
+
+// ─── COLLAGE MODE ───────────────────────────────────────────────
+let collageCat = null, collageStyle = null;
+let collageChosen = new Set();
+let collageChecked = false;
+let collageCurrentCat = null, collageCurrentStyle = null;
+
+function showCollagePicker() {
+  document.getElementById('cat-picker').style.display = 'none';
+  document.getElementById('collage-cat-picker').style.display = 'block';
+}
+
+function backToCollageMenu() {
+  document.getElementById('collage-game').classList.remove('show');
+  document.getElementById('collage-cat-picker').style.display = 'block';
+}
+
+function backToMainMenu() {
+  document.getElementById('collage-cat-picker').style.display = 'none';
+  document.getElementById('cat-picker').style.display = 'flex';
+}
+
+function startCollage(cat, style) {
+  collageCurrentCat = cat; collageCurrentStyle = style;
+  collageChosen = new Set(); collageChecked = false;
+
+  document.getElementById('collage-cat-picker').style.display = 'none';
+  document.getElementById('collage-game').classList.add('show');
+  document.getElementById('collage-result').classList.remove('show');
+  document.getElementById('collage-wrap') && (document.querySelector('.collage-wrap').style.display = '');
+
+  const collageInfo = quizData.collages[cat][style];
+  document.getElementById('collage-img').src = collageInfo.image;
+
+  const tag = document.getElementById('collage-style-tag');
+  tag.textContent = collageInfo.style;
+  tag.className = 'collage-style-tag style-tag-' + style;
+
+  const ind = document.getElementById('collage-indicator');
+  ind.textContent = (cat === 'germany' ? '🇩🇪 Germany' : '🌍 World') + ' · ' + collageInfo.style;
+  ind.className = 'cat-indicator ' + cat;
+
+  // Build 8 options: 4 correct (this cat) + 4 distractors (other cat)
+  const otherCat = cat === 'germany' ? 'world' : 'germany';
+  const correct = quizData.categories[cat];
+  const distractors = quizData.categories[otherCat];
+  const allOpts = shuffle([...correct.map(i => ({...i, isCorrect: true})),
+                            ...distractors.map(i => ({...i, isCorrect: false}))]);
+
+  document.getElementById('collage-score').textContent = '0';
+  document.getElementById('collage-chosen').textContent = '0';
+  document.getElementById('collage-check').disabled = true;
+
+  const optsEl = document.getElementById('collage-opts');
+  optsEl.innerHTML = '';
+  allOpts.forEach((item, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'opt-btn';
+    btn.dataset.id = item.id;
+    btn.dataset.correct = item.isCorrect;
+    btn.innerHTML = `<span class="opt-check"></span><span>${item.headline}<div class="h-source">${item.source}</div></span>`;
+    btn.addEventListener('click', () => toggleCollageOpt(item.id, btn));
+    optsEl.appendChild(btn);
+  });
+}
+
+function toggleCollageOpt(id, btn) {
+  if (collageChecked || btn.classList.contains('correct') || btn.classList.contains('revealed')) return;
+  if (collageChosen.has(id)) {
+    collageChosen.delete(id);
+    btn.classList.remove('chosen');
+    btn.querySelector('.opt-check').textContent = '';
+  } else {
+    if (collageChosen.size >= 4) return;
+    collageChosen.add(id);
+    btn.classList.add('chosen');
+    btn.querySelector('.opt-check').textContent = '✓';
+  }
+  const n = collageChosen.size;
+  document.getElementById('collage-chosen').textContent = n;
+  document.getElementById('collage-check').disabled = n < 4;
+}
+
+function checkCollage() {
+  collageChecked = true;
+  const correct = quizData.categories[collageCurrentCat];
+  const correctIds = new Set(correct.map(i => i.id));
+  let score = 0;
+
+  document.querySelectorAll('.opt-btn').forEach(btn => {
+    const id = btn.dataset.id;
+    const isCorrect = btn.dataset.correct === 'true';
+    const wasChosen = collageChosen.has(id);
+
+    if (wasChosen && isCorrect) { btn.classList.remove('chosen'); btn.classList.add('correct'); btn.querySelector('.opt-check').textContent = '✓'; score++; }
+    else if (wasChosen && !isCorrect) { btn.classList.remove('chosen'); btn.classList.add('wrong-sel'); btn.querySelector('.opt-check').textContent = '✗'; }
+    else if (!wasChosen && isCorrect) { btn.classList.add('revealed'); btn.querySelector('.opt-check').textContent = '✓'; }
+    else { btn.classList.add('locked'); }
+  });
+
+  document.getElementById('collage-score').textContent = score;
+  document.getElementById('collage-check').disabled = true;
+  setTimeout(() => showCollageResult(score), 700);
+}
+
+function showCollageResult(score) {
+  document.querySelector('.collage-wrap').style.display = 'none';
+  const screen = document.getElementById('collage-result');
+  screen.classList.add('show');
+  const emojis = ['😵','😅','🤔','👍','🏆'];
+  const titles = ['Completely stumped!','Getting warmer!','Not bad at all!','Almost there!','Perfect eye!'];
+  const subs   = ['The artist was sneaky.','Try a different style!','You spotted most of them!','One story slipped by!','You can read art like a newspaper!'];
+  document.getElementById('collage-result-emoji').textContent = emojis[score];
+  document.getElementById('collage-result-title').textContent = titles[score];
+  document.getElementById('collage-result-sub').textContent = `${score}/4 stories found in the ${document.getElementById('collage-style-tag').textContent} collage. ${subs[score]}`;
+}
+
+function restartCollage() {
+  startCollage(collageCurrentCat, collageCurrentStyle);
+}
+
+</script>
+</body>
+</html>
