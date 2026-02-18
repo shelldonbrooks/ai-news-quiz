@@ -107,11 +107,11 @@ header p{color:var(--muted);font-size:.9rem}
 .style-sub{font-size:.72rem;color:var(--muted)}
 
 /* ── COLLAGE GAME ── */
-#collage-game{max-width:100%;padding-left:0;padding-right:0}
-.collage-layout{display:flex;flex-direction:column;gap:1.25rem}
-.collage-img-box{overflow:hidden;border-top:2px solid var(--border);border-bottom:2px solid var(--border);position:relative}
+#collage-game{max-width:min(90vw,1700px);margin:0 auto;padding-left:0;padding-right:0}
+.collage-layout{display:flex;flex-direction:column;gap:1.25rem;align-items:center}
+.collage-img-box{overflow:hidden;border:2px solid var(--border);border-radius:12px;position:relative;width:100%;max-width:1024px}
 .collage-img-box img{width:100%;display:block}
-.collage-opts-wrap{max-width:860px;margin:0 auto;padding:0 1rem}
+.collage-opts-wrap{width:100%;max-width:860px;padding:0 1rem}
 @media(max-width:620px){.collage-opts-wrap{padding:0 .75rem}}
 .art-tag{position:absolute;top:8px;left:8px;padding:.2rem .6rem;border-radius:99px;font-size:.72rem;font-weight:700;backdrop-filter:blur(6px)}
 .art-tag.bosch{background:rgba(192,132,252,.85);color:#fff}
