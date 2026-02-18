@@ -320,7 +320,8 @@ function startQuiz(cat){
 
   // Build rounds: 4 images, each with 1 correct + 3 distractors — ALL from same category
   const correct = Q.categories[cat];       // 4 items with images
-  const dPool   = Q.distractors[cat];      // 4 text-only distractors, same category
+  const otherCat = cat==='germany'?'world':'germany';
+  const dPool   = Q.distractors ? Q.distractors[cat] : Q.categories[otherCat]; // fallback: use other category
   const shuffledCorrect = shuffle(correct);
 
   quizRounds = shuffledCorrect.map(item=>{
@@ -475,9 +476,10 @@ function startCollage(cat,style){
   document.getElementById('coll-result').classList.remove('show');
   document.querySelector('.collage-layout').style.display='';
 
-  // Collage: 4 correct (with images) + 4 same-category text distractors = 8 options
+  // Collage: 4 correct (with images) + 4 distractors = 8 options
   const correct=Q.categories[cat];
-  const distractors=Q.distractors[cat];
+  const otherCatC=cat==='germany'?'world':'germany';
+  const distractors=Q.distractors ? Q.distractors[cat] : Q.categories[otherCatC];
   const allOpts=shuffle([...correct.map(i=>({...i,isCorrect:true})),...distractors.map(i=>({...i,isCorrect:false}))]);
 
   const optsEl=document.getElementById('coll-opts');
