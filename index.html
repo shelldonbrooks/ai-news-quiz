@@ -144,14 +144,23 @@ header p { color: var(--muted); font-size: .9rem; }
 .style-label { font-weight: 700; font-size: 1rem; }
 .style-sub { font-size: .78rem; color: var(--muted); }
 
-.collage-game { max-width: 1100px; margin: 0 auto; padding: 1rem 1rem 3rem; display: none; }
+/* Collage game: no horizontal padding — image goes full viewport width */
+.collage-game { max-width: 100%; margin: 0; padding: 1rem 0 3rem; display: none; }
 .collage-game.show { display: block; }
 
-.collage-wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; align-items: start; }
-@media (max-width: 700px) { .collage-wrap { grid-template-columns: 1fr; } }
+.collage-wrap { display: flex; flex-direction: column; gap: 1.5rem; }
 
-.collage-img-box { border-radius: 12px; overflow: hidden; border: 2px solid var(--border); position: relative; }
+/* Image: full-bleed, no border-radius on desktop */
+.collage-img-box { overflow: hidden; border-top: 2px solid var(--border); border-bottom: 2px solid var(--border); position: relative; }
 .collage-img-box img { width: 100%; display: block; }
+
+/* Options + HUD: constrained width, centered, with padding */
+.collage-inner { max-width: 900px; margin: 0 auto; padding: 0 1rem; }
+
+@media (max-width: 700px) {
+  .collage-img-box { border-radius: 0; }
+}
+
 .collage-style-tag {
   position: absolute; top: 10px; left: 10px;
   padding: .25rem .65rem; border-radius: 99px; font-size: .75rem; font-weight: 700;
@@ -160,7 +169,8 @@ header p { color: var(--muted); font-size: .9rem; }
 .style-tag-bosch   { background: rgba(192,132,252,.85); color: #fff; }
 .style-tag-vangogh { background: rgba(251,191,36,.9); color: #1a1000; }
 
-.collage-options { display: flex; flex-direction: column; gap: .6rem; }
+.collage-options { display: flex; flex-direction: column; gap: .75rem; }
+#collage-opts { display: flex; flex-direction: column; gap: .6rem; }
 .collage-hud { display: flex; justify-content: space-between; align-items: center; margin-bottom: .5rem; font-size: .85rem; color: var(--muted); }
 .collage-score { font-weight: 700; color: var(--accent); font-size: 1rem; }
 .opt-btn {
@@ -248,37 +258,43 @@ header p { color: var(--muted); font-size: .9rem; }
 
 <!-- Collage Game -->
 <div class="collage-game" id="collage-game">
-  <div class="topbar">
-    <button class="back-btn" onclick="backToCollageMenu()">← Styles</button>
-    <span class="cat-indicator" id="collage-indicator"></span>
-    <div class="hud" style="margin-left:auto">
-      <div class="score-box">Found: <span id="collage-score">0</span>/4</div>
+  <div class="collage-inner">
+    <div class="topbar">
+      <button class="back-btn" onclick="backToCollageMenu()">← Styles</button>
+      <span class="cat-indicator" id="collage-indicator"></span>
+      <div class="hud" style="margin-left:auto">
+        <div class="score-box">Found: <span id="collage-score">0</span>/4</div>
+      </div>
     </div>
-  </div>
-  <div class="instructions">
-    <strong>Collage Mode:</strong> All 4 news stories are hidden in this artwork. Select the 4 correct headlines from the 8 options below!
+    <div class="instructions">
+      <strong>Collage Mode:</strong> All 4 news stories are hidden in this artwork. Select the 4 correct headlines from the 8 options below!
+    </div>
   </div>
   <div class="collage-wrap">
     <div class="collage-img-box">
       <img id="collage-img" src="" alt="News Collage">
       <span class="collage-style-tag" id="collage-style-tag"></span>
     </div>
-    <div class="collage-options">
-      <div class="collage-hud">
-        <span>Select 4 headlines hidden in the image:</span>
-        <span class="collage-score"><span id="collage-chosen">0</span>/4 selected</span>
+    <div class="collage-inner">
+      <div class="collage-options">
+        <div class="collage-hud">
+          <span>Select 4 headlines hidden in the image:</span>
+          <span class="collage-score"><span id="collage-chosen">0</span>/4 selected</span>
+        </div>
+        <div id="collage-opts"></div>
+        <button class="check-btn" id="collage-check" disabled onclick="checkCollage()">Check Answers</button>
       </div>
-      <div id="collage-opts"></div>
-      <button class="check-btn" id="collage-check" disabled onclick="checkCollage()">Check Answers</button>
     </div>
   </div>
-  <div class="result-screen" id="collage-result">
-    <div class="result-emoji" id="collage-result-emoji"></div>
-    <h2 id="collage-result-title"></h2>
-    <p id="collage-result-sub"></p>
-    <div class="result-btns">
-      <button class="btn btn-primary" onclick="restartCollage()">🔄 Try Again</button>
-      <button class="btn btn-secondary" onclick="backToCollageMenu()">← Styles</button>
+  <div class="collage-inner">
+    <div class="result-screen" id="collage-result">
+      <div class="result-emoji" id="collage-result-emoji"></div>
+      <h2 id="collage-result-title"></h2>
+      <p id="collage-result-sub"></p>
+      <div class="result-btns">
+        <button class="btn btn-primary" onclick="restartCollage()">🔄 Try Again</button>
+        <button class="btn btn-secondary" onclick="backToCollageMenu()">← Styles</button>
+      </div>
     </div>
   </div>
 </div>
