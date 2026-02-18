@@ -148,6 +148,20 @@ header p{color:var(--muted);font-size:.9rem}
 .btn:hover{opacity:.85}
 
 @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+
+/* ── ARCHIVE ── */
+.archive-btn-wrap{max-width:600px;margin:.75rem auto 0;padding:0 1rem}
+.archive-btn{width:100%;padding:.75rem 1rem;background:var(--card);border:1px solid var(--border);color:var(--muted);border-radius:10px;cursor:pointer;font-size:.875rem;transition:all .2s;text-align:left}
+.archive-btn:hover{border-color:var(--accent);color:var(--text)}
+.archive-list{display:flex;flex-direction:column;gap:.55rem;margin-top:.75rem}
+.archive-item{background:var(--card);border:2px solid var(--border);border-radius:10px;padding:.85rem 1rem;cursor:pointer;color:var(--text);font-size:.9rem;font-weight:600;text-align:left;transition:all .2s;display:flex;justify-content:space-between;align-items:center;width:100%}
+.archive-item:hover{border-color:var(--accent);background:#111827}
+.archive-item.today-item{border-color:var(--accent)}
+.ai-modes{font-size:.8rem;color:var(--muted)}
+.today-pill{background:var(--accent);color:#0a0e1a;font-size:.7rem;font-weight:700;padding:.15rem .55rem;border-radius:99px}
+.archive-empty{color:var(--muted);padding:.5rem 0;font-size:.875rem}
+.archive-mode-banner{background:#1a2a1a;border:1px solid var(--green);border-radius:8px;padding:.5rem 1rem;text-align:center;font-size:.8rem;color:var(--green);max-width:600px;margin:.5rem auto 0;display:none}
+.archive-mode-banner.show{display:block}
 </style>
 </head>
 <body>
@@ -177,6 +191,21 @@ header p{color:var(--muted);font-size:.9rem}
       <div class="mode-label">Collage</div>
       <div class="mode-sub">4 stories · 1 artwork</div>
     </div>
+  </div>
+  <div class="archive-btn-wrap">
+    <button class="archive-btn" onclick="showArchive()">📅 Archiv — vergangene Tage nachspielen →</button>
+  </div>
+  <div class="archive-mode-banner" id="archive-banner"></div>
+</div>
+
+<!-- ARCHIVE SCREEN -->
+<div class="screen" id="archive-screen">
+  <div style="max-width:600px;margin:0 auto;padding:1rem 1rem 3rem">
+    <div class="topbar">
+      <button class="back-btn" onclick="goMenu()">← Menu</button>
+      <span class="cat-tag" style="color:var(--muted)">📅 Archiv</span>
+    </div>
+    <div id="archive-list"><div class="archive-empty">Loading…</div></div>
   </div>
 </div>
 
@@ -503,6 +532,75 @@ function showCollageResult(score){
   document.getElementById('cr-sub').textContent=`${score}/4 stories found. ${subs[score]}`;
 }
 function restartCollage(){startCollage(currentCat,currentStyle)}
+
+// ── ARCHIVE ──
+let originalQ = null;
+
+async function showArchive() {
+  show('archive-screen');
+  const listEl = document.getElementById('archive-list');
+  listEl.innerHTML = '<div class="archive-empty">Loading…</div>';
+  try {
+    const index = await (await fetch('archive-index.json?t='+Date.now())).json();
+    listEl.innerHTML = '';
+
+    // Today's entry always first
+    const todayBtn = document.createElement('button');
+    todayBtn.className = 'archive-item today-item';
+    const td = new Date((originalQ||Q).date+'T00:00:00');
+    todayBtn.innerHTML = `<span>${td.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'})}</span><span class="today-pill">Today</span>`;
+    todayBtn.onclick = loadTodayQuiz;
+    listEl.appendChild(todayBtn);
+
+    if (!index.length) {
+      const note = document.createElement('div');
+      note.className = 'archive-empty';
+      note.textContent = 'No archived days yet — check back tomorrow!';
+      listEl.appendChild(note);
+      return;
+    }
+    index.forEach(date => {
+      const d = new Date(date+'T00:00:00');
+      const label = d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
+      const btn = document.createElement('button');
+      btn.className = 'archive-item';
+      btn.innerHTML = `<span>${label}</span><span class="ai-modes">🇩🇪 &nbsp;🌍 &nbsp;🖼️</span>`;
+      btn.onclick = () => loadArchivedQuiz(date);
+      listEl.appendChild(btn);
+    });
+  } catch(e) {
+    listEl.innerHTML = '<div class="archive-empty">No archive available yet — check back tomorrow!</div>';
+  }
+}
+
+async function loadArchivedQuiz(date) {
+  if (!originalQ) originalQ = Q;
+  try {
+    Q = await (await fetch(`quiz-data-${date}.json?t=`+Date.now())).json();
+    const d = new Date(date+'T00:00:00');
+    const label = d.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
+    document.getElementById('date-badge').textContent = '📅 '+label;
+    const banner = document.getElementById('archive-banner');
+    banner.textContent = '📅 Playing archive: '+label+' — ';
+    const back = document.createElement('span');
+    back.style.cssText = 'cursor:pointer;text-decoration:underline';
+    back.textContent = 'back to today';
+    back.onclick = loadTodayQuiz;
+    banner.appendChild(back);
+    banner.classList.add('show');
+    goMenu();
+  } catch(e) {
+    alert('Could not load archive for '+date);
+  }
+}
+
+function loadTodayQuiz() {
+  if (originalQ) { Q = originalQ; originalQ = null; }
+  const d = new Date(Q.date+'T00:00:00');
+  document.getElementById('date-badge').textContent = d.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
+  document.getElementById('archive-banner').classList.remove('show');
+  goMenu();
+}
 
 // ── BOOT ──
 init().catch(()=>{document.querySelector('header p').textContent='Failed to load quiz data.'});
