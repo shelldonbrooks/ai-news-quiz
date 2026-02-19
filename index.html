@@ -10,7 +10,7 @@
   --bg:#0a0e1a; --card:#111827; --border:#1f2937;
   --accent:#38bdf8; --green:#22c55e; --red:#ef4444;
   --text:#e2e8f0; --muted:#6b7280;
-  --de:#e8c84a; --world:#38bdf8;
+  --de:#e8c84a; --world:#38bdf8; --history:#f59e0b;
 }
 *{margin:0;padding:0;box-sizing:border-box}
 body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;min-height:100vh}
@@ -24,8 +24,8 @@ header p{color:var(--muted);font-size:.9rem}
 /* ── MAIN MENU ── */
 #menu{max-width:600px;margin:0 auto;padding:1.5rem 1rem}
 .menu-title{text-align:center;font-size:.8rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:1rem}
-.menu-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.9rem}
-@media(max-width:480px){.menu-grid{grid-template-columns:1fr 1fr}}
+.menu-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:.9rem}
+@media(max-width:600px){.menu-grid{grid-template-columns:1fr 1fr}}
 .mode-btn{
   display:flex;flex-direction:column;align-items:center;gap:.4rem;
   padding:1.1rem .75rem;border-radius:14px;cursor:pointer;
@@ -36,6 +36,16 @@ header p{color:var(--muted);font-size:.9rem}
 .mode-btn.de{border-color:var(--de)}.mode-btn.de:hover{background:#1a1810}
 .mode-btn.world{border-color:var(--world)}.mode-btn.world:hover{background:#0d1f2a}
 .mode-btn.collage{border-color:#a78bfa}.mode-btn.collage:hover{background:#180f2a}
+.mode-btn.history{border-color:var(--history)}.mode-btn.history:hover{background:#1a1200}
+.mode-btn.fullday{border-color:var(--green);grid-column:1/-1}.mode-btn.fullday:hover{background:#051a0e}
+.mode-btn.fullday .mode-label{font-size:1.05rem}
+/* Year event label */
+.year-event-label{padding:.6rem .75rem;background:var(--card);border:1px solid var(--border);border-radius:8px;margin-bottom:.6rem;font-size:.875rem;font-weight:600;color:var(--text);line-height:1.35}
+/* Fullday bridge overlay */
+#fullday-bridge{display:none;position:fixed;inset:0;background:rgba(10,14,26,.96);z-index:200;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:.4rem;padding:2rem}
+#fullday-bridge.show{display:flex}
+/* Personal best badge */
+.pb-badge{display:inline-block;padding:.2rem .65rem;border-radius:99px;font-size:.75rem;font-weight:700;background:rgba(251,191,36,.15);color:#fbbf24;border:1px solid rgba(251,191,36,.3);margin-top:.5rem}
 .mode-emoji{font-size:2.2rem}
 .mode-label{font-weight:700;font-size:.95rem}
 .mode-sub{font-size:.72rem;color:var(--muted);text-align:center}
@@ -47,7 +57,7 @@ header p{color:var(--muted);font-size:.9rem}
 .back-btn{padding:.4rem .8rem;background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:6px;cursor:pointer;font-size:.82rem;transition:all .2s}
 .back-btn:hover{border-color:var(--accent);color:var(--text)}
 .cat-tag{font-weight:700;font-size:.95rem}
-.cat-tag.de{color:var(--de)}.cat-tag.world{color:var(--world)}.cat-tag.collage{color:#a78bfa}
+.cat-tag.de{color:var(--de)}.cat-tag.world{color:var(--world)}.cat-tag.collage{color:#a78bfa}.cat-tag.history{color:var(--history)}
 .score-hud{margin-left:auto;font-size:.95rem;font-weight:600;color:var(--accent)}
 .pips{display:flex;gap:5px}
 .pip{width:22px;height:5px;border-radius:3px;background:var(--border);transition:background .3s}
@@ -56,6 +66,14 @@ header p{color:var(--muted);font-size:.9rem}
 /* ── QUIZ ROUND ── */
 #quiz-round{}
 .round-info{text-align:right;font-size:.78rem;color:var(--muted);margin-bottom:.4rem}
+/* Art style badge for History mode */
+.art-style-badge{
+  position:absolute;bottom:8px;right:8px;
+  padding:.18rem .55rem;border-radius:99px;
+  font-size:.7rem;font-weight:700;
+  background:rgba(245,158,11,.85);color:#0a0e1a;
+  backdrop-filter:blur(4px);pointer-events:none;
+}
 
 /* Countdown bar */
 .countdown-wrap{height:5px;background:var(--border);border-radius:3px;margin-bottom:1rem;overflow:hidden}
@@ -64,7 +82,7 @@ header p{color:var(--muted);font-size:.9rem}
 
 /* Image */
 .quiz-img-wrap{border-radius:14px;overflow:hidden;border:2px solid var(--border);margin-bottom:1rem;position:relative}
-.quiz-img-wrap img{width:100%;max-height:360px;object-fit:cover;display:block}
+.quiz-img-wrap img{width:100%;display:block;max-height:min(72vw,660px);object-fit:contain}
 .img-result-overlay{
   position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
   font-size:3rem;opacity:0;transition:opacity .2s;pointer-events:none;
@@ -186,10 +204,20 @@ header p{color:var(--muted);font-size:.9rem}
       <div class="mode-label">World</div>
       <div class="mode-sub">World News · Countdown</div>
     </div>
+    <div class="mode-btn history" onclick="showHistoryPicker()">
+      <div class="mode-emoji">🏛️</div>
+      <div class="mode-label">History</div>
+      <div class="mode-sub">200 AD–heute · Random Style</div>
+    </div>
     <div class="mode-btn collage" onclick="showCollagePicker()">
       <div class="mode-emoji">🖼️</div>
       <div class="mode-label">Collage</div>
       <div class="mode-sub">4 stories · 1 artwork</div>
+    </div>
+    <div class="mode-btn fullday" onclick="startFullDay()">
+      <div class="mode-emoji">🎮</div>
+      <div class="mode-label">Full Day — Alle Kategorien in einer Session</div>
+      <div class="mode-sub">Germany + World + History · 12 Fragen · Highscore</div>
     </div>
   </div>
   <div class="archive-btn-wrap">
@@ -290,6 +318,88 @@ header p{color:var(--muted);font-size:.9rem}
   </div>
 </div>
 
+<!-- HISTORY PICKER -->
+<div class="screen" id="history-picker">
+  <div class="topbar">
+    <button class="back-btn" onclick="goMenu()">← Menu</button>
+    <span class="cat-tag history">🏛️ History</span>
+  </div>
+  <div style="color:var(--muted);font-size:.85rem;margin-bottom:.25rem">Wähle History-Modus:</div>
+  <div class="style-grid" style="grid-template-columns:1fr 1fr">
+    <div class="style-card" style="border-color:var(--history)" onclick="startQuiz('history')">
+      <div class="style-emoji">🏛️</div>
+      <div class="style-name">Event Guess</div>
+      <div class="style-sub">Welches Ereignis ist abgebildet?</div>
+    </div>
+    <div class="style-card" style="border-color:#f97316" onclick="startYearGuess()">
+      <div class="style-emoji">🗓️</div>
+      <div class="style-name">Year Guess</div>
+      <div class="style-sub">Wann ist das passiert?</div>
+    </div>
+  </div>
+</div>
+
+<!-- YEAR GUESS SCREEN -->
+<div class="screen" id="year-screen">
+  <div class="topbar">
+    <button class="back-btn" onclick="stopYearTimer();goMenu()">← Menu</button>
+    <span class="cat-tag history">🗓️ Year Guess</span>
+    <div class="score-hud"><span id="year-score">0</span>/4</div>
+    <div class="pips" id="year-pips"></div>
+  </div>
+  <div class="round-info">Round <span id="year-round-num">1</span> of 4</div>
+  <div class="countdown-wrap"><div class="countdown-bar" id="year-cdown-bar"></div></div>
+  <div class="quiz-img-wrap">
+    <img id="year-img" src="" alt="">
+    <div class="img-result-overlay" id="year-overlay"></div>
+    <div class="art-style-badge" id="year-art-badge"></div>
+  </div>
+  <div class="year-event-label" id="year-event-name"></div>
+  <div id="year-opts-wrap">
+    <div style="font-size:.78rem;color:var(--muted);margin-bottom:.4rem">📅 Wann ist das passiert?</div>
+    <div class="options" id="year-opts"></div>
+  </div>
+  <div class="result-screen" id="year-result">
+    <div class="result-emoji" id="yr-emoji"></div>
+    <h2 id="yr-title"></h2>
+    <p id="yr-sub"></p>
+    <div class="pb-badge" id="yr-pb" style="display:none"></div>
+    <div class="result-btns" style="margin-top:1rem">
+      <button class="btn btn-primary" onclick="startYearGuess()">🔄 Again</button>
+      <button class="btn btn-secondary" onclick="showHistoryPicker()">← History</button>
+      <button class="btn btn-secondary" onclick="goMenu()">🏠 Menu</button>
+    </div>
+  </div>
+</div>
+
+<!-- FULL DAY RESULT SCREEN -->
+<div class="screen" id="fullday-result">
+  <div style="text-align:center;padding:2.5rem 1rem 3rem">
+    <div class="result-emoji" id="fd-emoji">🏆</div>
+    <h2 style="font-size:1.6rem;color:var(--accent);margin:.4rem 0">Full Day abgeschlossen!</h2>
+    <div id="fd-total" style="font-size:3.5rem;font-weight:800;color:var(--green);line-height:1.1;margin:.4rem 0"></div>
+    <div style="color:var(--muted);font-size:.85rem;margin-bottom:1.25rem">Gesamt-Score</div>
+    <div style="display:flex;flex-direction:column;gap:.5rem;max-width:320px;margin:0 auto 1.5rem">
+      <div id="fd-germany" style="background:var(--card);padding:.65rem 1rem;border-radius:8px;border:1px solid var(--border);text-align:left"></div>
+      <div id="fd-world"   style="background:var(--card);padding:.65rem 1rem;border-radius:8px;border:1px solid var(--border);text-align:left"></div>
+      <div id="fd-history" style="background:var(--card);padding:.65rem 1rem;border-radius:8px;border:1px solid var(--border);text-align:left"></div>
+    </div>
+    <div class="pb-badge" id="fd-pb" style="display:none;margin-bottom:1rem"></div>
+    <div class="result-btns">
+      <button class="btn btn-primary" onclick="startFullDay()">🔄 Full Day nochmal</button>
+      <button class="btn btn-secondary" onclick="goMenu()">← Menu</button>
+    </div>
+  </div>
+</div>
+
+<!-- FULL DAY BRIDGE OVERLAY (between categories) -->
+<div id="fullday-bridge">
+  <div style="font-size:2.5rem">✅</div>
+  <div id="bridge-cat" style="font-size:1.1rem;font-weight:700;color:var(--accent);margin:.2rem 0"></div>
+  <div id="bridge-score" style="font-size:3rem;font-weight:800;color:var(--green)"></div>
+  <div style="color:var(--muted);font-size:.85rem;margin-top:.5rem">Nächste Kategorie in Kürze…</div>
+</div>
+
 <script>
 // ──────────────────────────────────────────────
 // GLOBALS
@@ -300,7 +410,7 @@ let currentCat = null, currentStyle = null;
 function shuffle(a){const b=[...a];for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]]}return b}
 
 function show(id){document.querySelectorAll('.screen,#menu').forEach(e=>e.classList.remove('show'));const el=document.getElementById(id);if(el.id==='menu')el.style.display='';else el.classList.add('show')}
-function goMenu(){stopTimer();show('menu')}
+function goMenu(){stopTimer();stopYearTimer();_fullDayMode=false;show('menu')}
 
 async function init(){
   Q=await(await fetch('quiz-data.json?t='+Date.now())).json();
@@ -320,8 +430,9 @@ function startQuiz(cat){
 
   // Build rounds: 4 images, each with 1 correct + 3 distractors — ALL from same category
   const correct = Q.categories[cat];       // 4 items with images
-  const otherCat = cat==='germany'?'world':'germany';
-  const dPool   = Q.distractors ? Q.distractors[cat] : Q.categories[otherCat]; // fallback: use other category
+  const otherCatMap = {germany:'world', world:'germany', history:'world'};
+  const otherCat = otherCatMap[cat] || 'world';
+  const dPool   = (Q.distractors && Q.distractors[cat]) ? Q.distractors[cat] : Q.categories[otherCat];
   const shuffledCorrect = shuffle(correct);
 
   quizRounds = shuffledCorrect.map(item=>{
@@ -338,7 +449,8 @@ function startQuiz(cat){
   pips.innerHTML='';
   for(let i=0;i<4;i++){const p=document.createElement('div');p.className='pip';pips.appendChild(p)}
 
-  document.getElementById('quiz-cat-tag').textContent=cat==='germany'?'🇩🇪 Germany':'🌍 World';
+  const catLabels={germany:'🇩🇪 Germany', world:'🌍 World', history:'🏛️ History'};
+  document.getElementById('quiz-cat-tag').textContent=catLabels[cat]||cat;
   document.getElementById('quiz-cat-tag').className='cat-tag '+cat;
   document.getElementById('quiz-score').textContent='0';
   document.getElementById('quiz-result').classList.remove('show');
@@ -358,6 +470,12 @@ function showRound(){
   document.getElementById('quiz-img').src=r.item.image;
   document.getElementById('img-overlay').style.opacity='0';
   document.getElementById('img-overlay').textContent='';
+  // Show/update art style badge for History mode
+  let badge=document.getElementById('art-style-badge');
+  if(currentCat==='history' && r.item.style){
+    if(!badge){badge=document.createElement('div');badge.id='art-style-badge';badge.className='art-style-badge';document.querySelector('.quiz-img-wrap').appendChild(badge)}
+    badge.textContent='🎨 '+r.item.style;badge.style.display='';
+  } else { if(badge) badge.style.display='none'; }
 
   const optsEl=document.getElementById('options');
   optsEl.innerHTML='';
@@ -447,11 +565,14 @@ function showQuizResult(){
   document.getElementById('qr-emoji').textContent=emojis[s];
   document.getElementById('qr-title').textContent=titles[s];
   document.getElementById('qr-sub').textContent=`${s}/4 correct. ${subs[s]}`;
+  saveScore(currentCat, s);
   // reset hidden elements for next time
   setTimeout(()=>{
     document.querySelector('.quiz-img-wrap').style.display='';
     document.querySelector('.countdown-wrap').style.display='';
   },100);
+  // Full Day chaining
+  if(_fullDayMode){ setTimeout(()=>advanceFullDay(currentCat,s), 2400); }
 }
 
 // ──────────────────────────────────────────────
@@ -602,6 +723,215 @@ function loadTodayQuiz() {
   document.getElementById('date-badge').textContent = d.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
   document.getElementById('archive-banner').classList.remove('show');
   goMenu();
+}
+
+// ──────────────────────────────────────────────
+// HISTORY PICKER
+// ──────────────────────────────────────────────
+function showHistoryPicker(){stopTimer();show('history-picker')}
+
+// ──────────────────────────────────────────────
+// HIGHSCORE (localStorage)
+// ──────────────────────────────────────────────
+function saveScore(mode,score){
+  const today=Q?.date||new Date().toISOString().slice(0,10);
+  let data={};
+  try{data=JSON.parse(localStorage.getItem('newsquiz_scores')||'{}')}catch(e){}
+  if(!data[today])data[today]={};
+  const prev=data[today][mode]??0;
+  const isNew=score>prev;
+  if(isNew)data[today][mode]=score;
+  localStorage.setItem('newsquiz_scores',JSON.stringify(data));
+  return{score,prev,isNew};
+}
+function getBest(mode){
+  const today=Q?.date||new Date().toISOString().slice(0,10);
+  try{const d=JSON.parse(localStorage.getItem('newsquiz_scores')||'{}');return d[today]?.[mode]??null}catch(e){return null}
+}
+
+// ──────────────────────────────────────────────
+// YEAR GUESS MODE
+// ──────────────────────────────────────────────
+const YEAR_TIMER=10;
+let yearRounds=[],yearIdx=0,yearScore=0,yearTimerRAF=null;
+
+function startYearGuess(){
+  currentCat='history';
+  yearScore=0;yearIdx=0;
+  const items=Q.categories.history||[];
+  if(!items.length){alert('Noch keine History-Daten. Bitte zuerst das Gen-Script laufen lassen.');return}
+  // Build year pool from all history items + distractors
+  const allItems=[...items,...(Q.distractors?.history||[])];
+  const yearPool=[...new Set(allItems.map(e=>e.year).filter(Boolean))];
+
+  yearRounds=shuffle([...items]).map(item=>{
+    let wrong=shuffle(yearPool.filter(y=>y!==item.year)).slice(0,3);
+    // Pad with plausible offsets if pool too small
+    const offsets=[57,113,182,231];
+    let oi=0;
+    while(wrong.length<3){
+      const y=Math.max(200,Math.min(2010,item.year+(oi%2===0?1:-1)*offsets[oi]));
+      if(!wrong.includes(y)&&y!==item.year)wrong.push(y);
+      oi++;
+    }
+    return{item,opts:shuffle([item.year,...wrong.slice(0,3)])};
+  });
+
+  const pips=document.getElementById('year-pips');
+  pips.innerHTML='';
+  for(let i=0;i<4;i++){const p=document.createElement('div');p.className='pip';pips.appendChild(p)}
+  document.getElementById('year-score').textContent='0';
+  document.getElementById('year-result').classList.remove('show');
+  document.getElementById('year-opts-wrap').style.display='';
+  document.querySelector('#year-screen .quiz-img-wrap').style.display='';
+  document.querySelector('#year-screen .countdown-wrap').style.display='';
+  show('year-screen');
+  showYearRound();
+}
+
+function showYearRound(){
+  if(yearIdx>=yearRounds.length){showYearResult();return}
+  const r=yearRounds[yearIdx];
+  document.getElementById('year-round-num').textContent=yearIdx+1;
+  document.getElementById('year-img').src=r.item.image;
+  document.getElementById('year-event-name').textContent=r.item.headline;
+  document.getElementById('year-art-badge').textContent=r.item.style?'🎨 '+r.item.style:'';
+  document.getElementById('year-overlay').style.opacity='0';
+  document.getElementById('year-overlay').textContent='';
+
+  const optsEl=document.getElementById('year-opts');
+  optsEl.innerHTML='';
+  r.opts.forEach(year=>{
+    const btn=document.createElement('button');
+    btn.className='opt';
+    const isCorrect=year===r.item.year;
+    const label=year<1000?year+' AD':String(year);
+    btn.innerHTML=`<span class="opt-bullet">📅</span><span class="opt-text"><strong>${label}</strong></span>`;
+    btn.addEventListener('click',()=>pickYearOpt(isCorrect,year,btn,r));
+    optsEl.appendChild(btn);
+  });
+  startYearTimer();
+}
+
+function startYearTimer(){
+  stopYearTimer();
+  const bar=document.getElementById('year-cdown-bar');
+  bar.style.transition='none';bar.style.width='100%';bar.className='countdown-bar';
+  timerStart=performance.now();
+  function tick(now){
+    const elapsed=(now-timerStart)/1000;
+    const rem=Math.max(0,1-elapsed/YEAR_TIMER);
+    bar.style.transition=`width ${1/60}s linear`;
+    bar.style.width=(rem*100)+'%';
+    if(rem<0.3)bar.className='countdown-bar urgent';
+    if(rem<=0){yearTimeout(yearRounds[yearIdx]);return}
+    yearTimerRAF=requestAnimationFrame(tick);
+  }
+  yearTimerRAF=requestAnimationFrame(tick);
+}
+function stopYearTimer(){if(yearTimerRAF){cancelAnimationFrame(yearTimerRAF);yearTimerRAF=null}}
+
+function yearTimeout(round){
+  stopYearTimer();
+  document.querySelectorAll('#year-opts .opt').forEach(b=>b.disabled=true);
+  revealCorrectYear(round);
+  const pip=document.querySelectorAll('#year-pips .pip')[yearIdx];
+  if(pip)pip.classList.add('timeout');
+  document.getElementById('year-overlay').textContent='⏱️';
+  document.getElementById('year-overlay').style.opacity='1';
+  setTimeout(()=>{yearIdx++;showYearRound()},1600);
+}
+
+function pickYearOpt(isCorrect,year,btn,round){
+  stopYearTimer();
+  document.querySelectorAll('#year-opts .opt').forEach(b=>b.disabled=true);
+  btn.classList.add(isCorrect?'correct':'wrong');
+  btn.querySelector('.opt-bullet').textContent=isCorrect?'✓':'✗';
+  if(!isCorrect)revealCorrectYear(round);
+  const overlay=document.getElementById('year-overlay');
+  overlay.textContent=isCorrect?'✅':'❌';overlay.style.opacity='1';
+  const pip=document.querySelectorAll('#year-pips .pip')[yearIdx];
+  if(pip)pip.classList.add(isCorrect?'ok':'fail');
+  if(isCorrect){yearScore++;document.getElementById('year-score').textContent=yearScore}
+  setTimeout(()=>{yearIdx++;showYearRound()},1600);
+}
+
+function revealCorrectYear(round){
+  document.querySelectorAll('#year-opts .opt').forEach((btn,i)=>{
+    if(round.opts[i]===round.item.year){
+      btn.classList.add('correct');
+      btn.querySelector('.opt-bullet').textContent='✓';
+    }
+  });
+}
+
+function showYearResult(){
+  document.getElementById('year-opts-wrap').style.display='none';
+  document.querySelector('#year-screen .quiz-img-wrap').style.display='none';
+  document.querySelector('#year-screen .countdown-wrap').style.display='none';
+  document.getElementById('year-result').classList.add('show');
+  const s=yearScore;
+  const emojis=['😵','😅','🤔','👍','🏆'];
+  const titles=['History ist brutal!','Kommt noch!','Ordentlicher Historiker!','Fast perfekt!','Zeitreisender!'];
+  document.getElementById('yr-emoji').textContent=emojis[s];
+  document.getElementById('yr-title').textContent=titles[s];
+  document.getElementById('yr-sub').textContent=`${s}/4 Jahren richtig.`;
+  const res=saveScore('yearguess',s);
+  const pb=document.getElementById('yr-pb');
+  if(res.isNew&&s>0){pb.textContent=`🏆 Neuer Highscore: ${s}/4!`;pb.style.display=''}
+  else if(res.prev!==null){pb.textContent=`Bisheriges Bestes heute: ${res.prev}/4`;pb.style.display=''}
+  setTimeout(()=>{
+    document.querySelector('#year-screen .quiz-img-wrap').style.display='';
+    document.querySelector('#year-screen .countdown-wrap').style.display='';
+  },100);
+  if(_fullDayMode){setTimeout(()=>advanceFullDay('yearguess',s),2400)}
+}
+
+// ──────────────────────────────────────────────
+// FULL DAY MODE
+// ──────────────────────────────────────────────
+let _fullDayMode=false,_fullDayCatQueue=[],_fullDayScores={};
+
+function startFullDay(){
+  _fullDayMode=true;
+  _fullDayCatQueue=['germany','world','history'];
+  _fullDayScores={};
+  advanceFullDay(null,0);
+}
+
+function advanceFullDay(completedCat,score){
+  if(completedCat)_fullDayScores[completedCat]=score;
+  if(!_fullDayCatQueue.length){_fullDayMode=false;showFullDayResult();return}
+  const next=_fullDayCatQueue.shift();
+  if(completedCat){
+    const bridge=document.getElementById('fullday-bridge');
+    const catLabels={germany:'🇩🇪 Germany',world:'🌍 World',history:'🏛️ History'};
+    document.getElementById('bridge-cat').textContent=catLabels[completedCat]||completedCat;
+    document.getElementById('bridge-score').textContent=`${score}/4`;
+    bridge.classList.add('show');
+    setTimeout(()=>{bridge.classList.remove('show');startQuiz(next)},2000);
+  } else {
+    startQuiz(next);
+  }
+}
+
+function showFullDayResult(){
+  const cats=['germany','world','history'];
+  const labels={germany:'🇩🇪 Germany',world:'🌍 World',history:'🏛️ History'};
+  const total=cats.reduce((a,c)=>a+(_fullDayScores[c]||0),0);
+  document.getElementById('fd-total').textContent=`${total}/12`;
+  cats.forEach(c=>{
+    const el=document.getElementById('fd-'+c);
+    if(el)el.textContent=`${labels[c]}: ${_fullDayScores[c]??0}/4`;
+  });
+  const pct=total/12;
+  const emojis=['💀','😅','🤔','👍','🏆'];
+  document.getElementById('fd-emoji').textContent=emojis[Math.min(4,Math.round(pct*4))];
+  const res=saveScore('fullday',total);
+  const pb=document.getElementById('fd-pb');
+  if(res.isNew&&total>0){pb.textContent=`🏆 Neuer Highscore: ${total}/12!`;pb.style.display='inline-block'}
+  else if(res.prev!==null){pb.textContent=`Bisheriges Bestes heute: ${res.prev}/12`;pb.style.display='inline-block'}
+  show('fullday-result');
 }
 
 // ── BOOT ──
