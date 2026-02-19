@@ -165,6 +165,24 @@ header p{color:var(--muted);font-size:.9rem}
 .btn-primary{background:var(--accent);color:#0a0e1a}.btn-secondary{background:var(--border);color:var(--text)}
 .btn:hover{opacity:.85}
 
+/* ── QUIZ SUMMARY ── */
+.summary-card{background:var(--card);border:2px solid var(--border);border-radius:12px;padding:1rem;display:flex;gap:1rem;align-items:flex-start;transition:all .2s}
+.summary-card.correct{border-color:var(--green);background:rgba(34,197,94,.05)}
+.summary-card.wrong{border-color:var(--red);background:rgba(239,68,68,.05)}
+.summary-card.timeout{border-color:#f59e0b;background:rgba(245,158,11,.05)}
+.summary-thumb{min-width:150px;max-width:150px;border-radius:8px;overflow:hidden;border:1px solid var(--border);cursor:pointer;transition:transform .2s}
+.summary-thumb:hover{transform:scale(1.05)}
+.summary-thumb img{width:100%;display:block;object-fit:cover}
+.summary-content{flex:1}
+.summary-status{font-size:1.8rem;margin-bottom:.4rem}
+.summary-headline{font-size:.95rem;font-weight:600;margin-bottom:.5rem;line-height:1.3}
+.summary-answer{font-size:.85rem;margin-top:.35rem;line-height:1.4}
+.summary-answer strong{font-weight:700}
+.summary-answer.user-wrong{color:var(--red)}
+.summary-answer.user-correct{color:var(--green)}
+.summary-answer.timeout-text{color:#f59e0b}
+@media(max-width:600px){.summary-card{flex-direction:column}.summary-thumb{max-width:100%;min-width:100%}}
+
 @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
 
 /* ── ARCHIVE ── */
@@ -180,6 +198,18 @@ header p{color:var(--muted);font-size:.9rem}
 .archive-empty{color:var(--muted);padding:.5rem 0;font-size:.875rem}
 .archive-mode-banner{background:#1a2a1a;border:1px solid var(--green);border-radius:8px;padding:.5rem 1rem;text-align:center;font-size:.8rem;color:var(--green);max-width:600px;margin:.5rem auto 0;display:none}
 .archive-mode-banner.show{display:block}
+
+/* ── SCORE WIDGET ── */
+#score-widget{
+  display:flex;gap:.65rem;justify-content:center;flex-wrap:wrap;
+  max-width:600px;margin:.75rem auto 0;padding:0 1rem;
+}
+.sw-item{
+  flex:1;min-width:88px;background:var(--card);border:1px solid var(--border);
+  border-radius:10px;padding:.6rem .75rem;text-align:center;
+}
+.sw-val{display:block;font-size:1rem;font-weight:700;color:var(--accent);line-height:1.25}
+.sw-label{font-size:.7rem;color:var(--muted);margin-top:.18rem;display:block}
 </style>
 </head>
 <body>
@@ -189,6 +219,22 @@ header p{color:var(--muted);font-size:.9rem}
   <p>Match headlines to images — beat the clock</p>
   <span class="date-badge" id="date-badge">Loading…</span>
 </header>
+
+<!-- SCORE WIDGET (shown on home screen) -->
+<div id="score-widget">
+  <div class="sw-item">
+    <span class="sw-val" id="sw-today">0/20 pts</span>
+    <span class="sw-label">Today</span>
+  </div>
+  <div class="sw-item">
+    <span class="sw-val" id="sw-best">🏆 0 pts</span>
+    <span class="sw-label">Best day</span>
+  </div>
+  <div class="sw-item">
+    <span class="sw-val" id="sw-streak">🔥 0 days</span>
+    <span class="sw-label">Streak</span>
+  </div>
+</div>
 
 <!-- MAIN MENU -->
 <div id="menu">
@@ -259,10 +305,24 @@ header p{color:var(--muted);font-size:.9rem}
     <h2 id="qr-title"></h2>
     <p id="qr-sub"></p>
     <div class="result-btns">
+      <button class="btn btn-primary" onclick="showQuizSummary(answeredItems)" style="background:var(--green);display:none">📋 View Summary</button>
       <button class="btn btn-primary" id="qr-retry" onclick="retryQuiz()">🔄 Try Again</button>
       <button class="btn btn-secondary" onclick="goMenu()">← Menu</button>
     </div>
     <br><a href="/" style="color:var(--muted);font-size:.8rem">← Home</a>
+  </div>
+</div>
+
+<!-- QUIZ SUMMARY SCREEN -->
+<div class="screen" id="quiz-summary">
+  <div class="topbar">
+    <button class="back-btn" onclick="goMenu()">← Menu</button>
+    <span class="cat-tag" id="summary-cat-tag">📋 Quiz Summary</span>
+  </div>
+  <div id="summary-cards" style="display:flex;flex-direction:column;gap:1rem;margin-top:1rem"></div>
+  <div class="result-btns" style="margin-top:2rem;justify-content:center;display:flex">
+    <button class="btn btn-primary" onclick="retryQuiz()">🔄 Play Again</button>
+    <button class="btn btn-secondary" onclick="goMenu()">🏠 Home</button>
   </div>
 </div>
 
@@ -312,6 +372,7 @@ header p{color:var(--muted);font-size:.9rem}
     <h2 id="cr-title"></h2>
     <p id="cr-sub"></p>
     <div class="result-btns">
+      <button class="btn btn-primary" onclick="showQuizSummary(answeredItems)" style="background:var(--green);display:none">📋 View Summary</button>
       <button class="btn btn-primary" onclick="restartCollage()">🔄 Again</button>
       <button class="btn btn-secondary" onclick="showCollagePicker()">← Styles</button>
     </div>
@@ -325,7 +386,7 @@ header p{color:var(--muted);font-size:.9rem}
     <span class="cat-tag history">🏛️ History</span>
   </div>
   <div style="color:var(--muted);font-size:.85rem;margin-bottom:.25rem">Wähle History-Modus:</div>
-  <div class="style-grid" style="grid-template-columns:1fr 1fr">
+  <div class="style-grid" style="grid-template-columns:1fr 1fr 1fr">
     <div class="style-card" style="border-color:var(--history)" onclick="startQuiz('history')">
       <div class="style-emoji">🏛️</div>
       <div class="style-name">Event Guess</div>
@@ -335,6 +396,11 @@ header p{color:var(--muted);font-size:.9rem}
       <div class="style-emoji">🗓️</div>
       <div class="style-name">Year Guess</div>
       <div class="style-sub">Wann ist das passiert?</div>
+    </div>
+    <div class="style-card" style="border-color:var(--green)" onclick="startQuiz('onthisday')">
+      <div class="style-emoji">📅</div>
+      <div class="style-name">On This Day</div>
+      <div class="style-sub">Ereignisse vom 19. Februar</div>
     </div>
   </div>
 </div>
@@ -365,6 +431,7 @@ header p{color:var(--muted);font-size:.9rem}
     <p id="yr-sub"></p>
     <div class="pb-badge" id="yr-pb" style="display:none"></div>
     <div class="result-btns" style="margin-top:1rem">
+      <button class="btn btn-primary" onclick="showQuizSummary(answeredItems)" style="background:var(--green);display:none">📋 View Summary</button>
       <button class="btn btn-primary" onclick="startYearGuess()">🔄 Again</button>
       <button class="btn btn-secondary" onclick="showHistoryPicker()">← History</button>
       <button class="btn btn-secondary" onclick="goMenu()">🏠 Menu</button>
@@ -406,33 +473,37 @@ header p{color:var(--muted);font-size:.9rem}
 // ──────────────────────────────────────────────
 let Q = null; // quiz-data.json
 let currentCat = null, currentStyle = null;
+let answeredItems = []; // Track user answers for summary
 
 function shuffle(a){const b=[...a];for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]]}return b}
 
-function show(id){document.querySelectorAll('.screen,#menu').forEach(e=>e.classList.remove('show'));const el=document.getElementById(id);if(el.id==='menu')el.style.display='';else el.classList.add('show')}
-function goMenu(){stopTimer();stopYearTimer();_fullDayMode=false;show('menu')}
+function show(id){document.querySelectorAll('.screen,#menu').forEach(e=>e.classList.remove('show'));const el=document.getElementById(id);if(el.id==='menu')el.style.display='';else el.classList.add('show');window.scrollTo({top:0,behavior:'smooth'})}
+function goMenu(){stopTimer();stopYearTimer();_fullDayMode=false;show('menu');updateScoreWidget()}
 
 async function init(){
   Q=await(await fetch('quiz-data.json?t='+Date.now())).json();
   const d=new Date(Q.date+'T00:00:00');
   document.getElementById('date-badge').textContent=d.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
+  updateScoreWidget();
 }
 
 // ──────────────────────────────────────────────
 // QUIZ MODE (countdown, one image at a time)
 // ──────────────────────────────────────────────
-const TIMER_SEC = 7;
+const TIMER_SEC = 15;
 let quizRounds=[], quizIdx=0, quizScore=0, quizTimerRAF=null, timerStart=0;
 
 function startQuiz(cat){
   currentCat=cat;
   quizScore=0; quizIdx=0;
+  answeredItems = []; // Reset summary tracking
 
   // Build rounds: 4 images, each with 1 correct + 3 distractors — ALL from same category
-  const correct = Q.categories[cat];       // 4 items with images
-  const otherCatMap = {germany:'world', world:'germany', history:'world'};
+  const correct = (cat === 'onthisday') ? Q.onthisday.events : Q.categories[cat];       // 4 items with images
+  const otherCatMap = {germany:'world', world:'germany', history:'world', onthisday:'onthisday'};
   const otherCat = otherCatMap[cat] || 'world';
-  const dPool   = (Q.distractors && Q.distractors[cat]) ? Q.distractors[cat] : Q.categories[otherCat];
+  const dPool   = (cat === 'onthisday' && Q.onthisday.distractors) ? Q.onthisday.distractors : 
+                  ((Q.distractors && Q.distractors[cat]) ? Q.distractors[cat] : Q.categories[otherCat]);
   const shuffledCorrect = shuffle(correct);
 
   quizRounds = shuffledCorrect.map(item=>{
@@ -449,7 +520,7 @@ function startQuiz(cat){
   pips.innerHTML='';
   for(let i=0;i<4;i++){const p=document.createElement('div');p.className='pip';pips.appendChild(p)}
 
-  const catLabels={germany:'🇩🇪 Germany', world:'🌍 World', history:'🏛️ History'};
+  const catLabels={germany:'🇩🇪 Germany', world:'🌍 World', history:'🏛️ History', onthisday:'📅 On This Day'};
   document.getElementById('quiz-cat-tag').textContent=catLabels[cat]||cat;
   document.getElementById('quiz-cat-tag').className='cat-tag '+cat;
   document.getElementById('quiz-score').textContent='0';
@@ -472,7 +543,7 @@ function showRound(){
   document.getElementById('img-overlay').textContent='';
   // Show/update art style badge for History mode
   let badge=document.getElementById('art-style-badge');
-  if(currentCat==='history' && r.item.style){
+  if((currentCat==='history' || currentCat==='onthisday') && r.item.style){
     if(!badge){badge=document.createElement('div');badge.id='art-style-badge';badge.className='art-style-badge';document.querySelector('.quiz-img-wrap').appendChild(badge)}
     badge.textContent='🎨 '+r.item.style;badge.style.display='';
   } else { if(badge) badge.style.display='none'; }
@@ -521,11 +592,28 @@ function timeout(){
   updatePip('timeout');
   const overlay=document.getElementById('img-overlay');
   overlay.textContent='⏱️'; overlay.style.opacity='1';
+  
+  // Track timeout for summary
+  const round = quizRounds[quizIdx];
+  answeredItems.push({
+    id: round.item.id,
+    headline: round.item.headline,
+    image: round.item.image,
+    userAnswer: '⏱️ Timeout',
+    correctAnswer: round.item.headline,
+    correct: false,
+    timeout: true
+  });
+  
   setTimeout(nextRound,1400);
 }
 
 function pickOpt(isCorrect, btn, round){
   stopTimer();
+  
+  // Get the selected headline before modifying the button
+  const selectedHeadline = btn.querySelector('.opt-text').textContent;
+  
   document.querySelectorAll('.opt').forEach(b=>b.disabled=true);
   btn.classList.add(isCorrect?'correct':'wrong');
   btn.querySelector('.opt-bullet').textContent=isCorrect?'✓':'✗';
@@ -536,6 +624,18 @@ function pickOpt(isCorrect, btn, round){
 
   updatePip(isCorrect?'ok':'fail');
   if(isCorrect){quizScore++;document.getElementById('quiz-score').textContent=quizScore}
+  
+  // Track answer for summary
+  answeredItems.push({
+    id: round.item.id,
+    headline: round.item.headline,
+    image: round.item.image,
+    userAnswer: selectedHeadline,
+    correctAnswer: round.item.headline,
+    correct: isCorrect,
+    timeout: false
+  });
+  
   setTimeout(nextRound,1400);
 }
 
@@ -566,6 +666,9 @@ function showQuizResult(){
   document.getElementById('qr-title').textContent=titles[s];
   document.getElementById('qr-sub').textContent=`${s}/4 correct. ${subs[s]}`;
   saveScore(currentCat, s);
+  // Record daily score for widget
+  const _modeKey = currentCat==='germany'?'de': currentCat==='world'?'world': currentCat==='history'?'history': null;
+  if(_modeKey) recordScore(_modeKey, s);
   // reset hidden elements for next time
   setTimeout(()=>{
     document.querySelector('.quiz-img-wrap').style.display='';
@@ -573,6 +676,80 @@ function showQuizResult(){
   },100);
   // Full Day chaining
   if(_fullDayMode){ setTimeout(()=>advanceFullDay(currentCat,s), 2400); }
+  // Auto-show summary after 2 seconds
+  else{ setTimeout(()=>showQuizSummary(answeredItems), 2000); }
+}
+
+// ──────────────────────────────────────────────
+// QUIZ SUMMARY SCREEN
+// ──────────────────────────────────────────────
+function showQuizSummary(items){
+  if(!items || items.length === 0) return;
+  
+  const summaryCards = document.getElementById('summary-cards');
+  summaryCards.innerHTML = '';
+  
+  // Add score header
+  const correctCount = items.filter(i => i.correct).length;
+  const totalCount = items.length;
+  const scoreHeader = document.createElement('div');
+  scoreHeader.style.cssText = 'text-align:center;margin-bottom:1.5rem;padding:1rem;background:var(--card);border:2px solid var(--border);border-radius:12px';
+  scoreHeader.innerHTML = `
+    <div style="font-size:2.5rem;font-weight:800;color:var(--accent);margin-bottom:.25rem">${correctCount}/${totalCount}</div>
+    <div style="font-size:.9rem;color:var(--muted)">Questions Correct</div>
+  `;
+  summaryCards.appendChild(scoreHeader);
+  
+  items.forEach((item, index) => {
+    const card = document.createElement('div');
+    const cardClass = item.timeout ? 'timeout' : (item.correct ? 'correct' : 'wrong');
+    const statusEmoji = item.timeout ? '⏱️' : (item.correct ? '✅' : '❌');
+    
+    card.className = `summary-card ${cardClass}`;
+    card.innerHTML = `
+      <div class="summary-thumb" onclick="window.open('${item.image}', '_blank')">
+        <img src="${item.image}" alt="Question ${index+1}">
+      </div>
+      <div class="summary-content">
+        <div class="summary-status">${statusEmoji}</div>
+        <div class="summary-headline">${item.headline}</div>
+        ${!item.correct ? `
+          <div class="summary-answer user-wrong">
+            <strong>Your answer:</strong> ${item.userAnswer}
+          </div>
+        ` : ''}
+        <div class="summary-answer ${item.correct ? 'user-correct' : ''}">
+          <strong>Correct answer:</strong> ${item.correctAnswer}
+        </div>
+      </div>
+    `;
+    summaryCards.appendChild(card);
+  });
+  
+  // Update category tag
+  const catLabels = {
+    germany:'🇩🇪 Germany', 
+    world:'🌍 World', 
+    history:'🏛️ History', 
+    yearguess:'🗓️ Year Guess'
+  };
+  
+  // Handle collage mode - determine if it was germany or world collage
+  let displayCat = currentCat;
+  if(items.length === 4) {
+    // Regular quiz mode (4 items) - use currentCat
+    displayCat = currentCat;
+  } else if(currentStyle) {
+    // Collage mode - use 'collage' as display category
+    displayCat = 'collage';
+    catLabels.collage = '🖼️ Collage';
+  }
+  
+  const catTag = document.getElementById('summary-cat-tag');
+  catTag.textContent = `📋 ${catLabels[displayCat] || 'Quiz'} Summary`;
+  catTag.className = 'cat-tag ' + displayCat;
+  
+  show('quiz-summary');
 }
 
 // ──────────────────────────────────────────────
@@ -580,13 +757,29 @@ function showQuizResult(){
 // ──────────────────────────────────────────────
 let collageChosen=new Set(), collageChecked=false;
 
-function showCollagePicker(){stopTimer();show('collage-picker')}
+function showCollagePicker(){
+  stopTimer();
+  // Grey out style cards for collages that aren't available today
+  document.querySelectorAll('#collage-picker .style-card').forEach(card=>{
+    const onclick=card.getAttribute('onclick')||'';
+    const m=onclick.match(/startCollage\('(\w+)','(\w+)'\)/);
+    if(m){
+      const available=Q.collages?.[m[1]]?.[m[2]];
+      card.style.opacity=available?'':'0.35';
+      card.style.pointerEvents=available?'':'none';
+      card.title=available?'':'Not available today';
+    }
+  });
+  show('collage-picker');
+}
 
 function startCollage(cat,style){
+  const info=Q.collages?.[cat]?.[style];
+  if(!info){alert('Diese Collage ist heute leider nicht verfügbar. Bitte wähle eine andere!');return;}
   currentCat=cat; currentStyle=style;
   collageChosen=new Set(); collageChecked=false;
+  answeredItems = []; // Reset summary tracking
 
-  const info=Q.collages[cat][style];
   document.getElementById('coll-img').src=info.image;
   const artTag=document.getElementById('coll-art-tag');
   artTag.textContent=info.style; artTag.className='art-tag '+style;
@@ -600,7 +793,7 @@ function startCollage(cat,style){
   // Collage: 4 correct (with images) + 4 distractors = 8 options
   const correct=Q.categories[cat];
   const otherCatC=cat==='germany'?'world':'germany';
-  const distractors=Q.distractors ? Q.distractors[cat] : Q.categories[otherCatC];
+  const distractors=Q.distractors?.[cat] ?? Q.categories[otherCatC];
   const allOpts=shuffle([...correct.map(i=>({...i,isCorrect:true})),...distractors.map(i=>({...i,isCorrect:false}))]);
 
   const optsEl=document.getElementById('coll-opts');
@@ -632,8 +825,26 @@ function toggleCOpt(id,btn){
 function checkCollage(){
   collageChecked=true;
   let score=0;
+  const info=Q.collages?.[currentCat]?.[currentStyle];
+  
   document.querySelectorAll('.copt').forEach(btn=>{
     const id=btn.dataset.id, isCorrect=btn.dataset.correct==='true', wasChosen=collageChosen.has(id);
+    const headline = btn.querySelector('span:last-child').firstChild.textContent;
+    
+    // Track each item for summary
+    if(isCorrect) {
+      const correctItem = Q.categories[currentCat].find(item => item.id === id);
+      answeredItems.push({
+        id: id,
+        headline: headline,
+        image: correctItem?.image || info.image,
+        userAnswer: wasChosen ? headline : '(Not selected)',
+        correctAnswer: headline,
+        correct: wasChosen,
+        timeout: false
+      });
+    }
+    
     if(wasChosen&&isCorrect){btn.classList.remove('chosen');btn.classList.add('correct');btn.querySelector('.copt-check').textContent='✓';score++}
     else if(wasChosen&&!isCorrect){btn.classList.remove('chosen');btn.classList.add('wrong-sel');btn.querySelector('.copt-check').textContent='✗'}
     else if(!wasChosen&&isCorrect){btn.classList.add('revealed');btn.querySelector('.copt-check').textContent='✓'}
@@ -645,6 +856,7 @@ function checkCollage(){
 }
 
 function showCollageResult(score){
+  recordScore('collage', score);
   document.querySelector('.collage-layout').style.display='none';
   const screen=document.getElementById('coll-result'); screen.classList.add('show');
   const emojis=['😵','😅','🤔','👍','🏆'];
@@ -653,6 +865,8 @@ function showCollageResult(score){
   document.getElementById('cr-emoji').textContent=emojis[score];
   document.getElementById('cr-title').textContent=titles[score];
   document.getElementById('cr-sub').textContent=`${score}/4 stories found. ${subs[score]}`;
+  // Auto-show summary after 2 seconds
+  setTimeout(()=>showQuizSummary(answeredItems), 2000);
 }
 function restartCollage(){startCollage(currentCat,currentStyle)}
 
@@ -752,12 +966,13 @@ function getBest(mode){
 // ──────────────────────────────────────────────
 // YEAR GUESS MODE
 // ──────────────────────────────────────────────
-const YEAR_TIMER=10;
+const YEAR_TIMER=15;
 let yearRounds=[],yearIdx=0,yearScore=0,yearTimerRAF=null;
 
 function startYearGuess(){
-  currentCat='history';
+  currentCat='yearguess';
   yearScore=0;yearIdx=0;
+  answeredItems = []; // Reset summary tracking
   const items=Q.categories.history||[];
   if(!items.length){alert('Noch keine History-Daten. Bitte zuerst das Gen-Script laufen lassen.');return}
   // Build year pool from all history items + distractors
@@ -839,6 +1054,19 @@ function yearTimeout(round){
   if(pip)pip.classList.add('timeout');
   document.getElementById('year-overlay').textContent='⏱️';
   document.getElementById('year-overlay').style.opacity='1';
+  
+  // Track timeout for summary
+  const correctLabel = round.item.year<1000 ? round.item.year+' AD' : String(round.item.year);
+  answeredItems.push({
+    id: round.item.id,
+    headline: round.item.headline,
+    image: round.item.image,
+    userAnswer: '⏱️ Timeout',
+    correctAnswer: correctLabel,
+    correct: false,
+    timeout: true
+  });
+  
   setTimeout(()=>{yearIdx++;showYearRound()},1600);
 }
 
@@ -853,6 +1081,20 @@ function pickYearOpt(isCorrect,year,btn,round){
   const pip=document.querySelectorAll('#year-pips .pip')[yearIdx];
   if(pip)pip.classList.add(isCorrect?'ok':'fail');
   if(isCorrect){yearScore++;document.getElementById('year-score').textContent=yearScore}
+  
+  // Track answer for summary
+  const yearLabel = year<1000 ? year+' AD' : String(year);
+  const correctLabel = round.item.year<1000 ? round.item.year+' AD' : String(round.item.year);
+  answeredItems.push({
+    id: round.item.id,
+    headline: round.item.headline,
+    image: round.item.image,
+    userAnswer: yearLabel,
+    correctAnswer: correctLabel,
+    correct: isCorrect,
+    timeout: false
+  });
+  
   setTimeout(()=>{yearIdx++;showYearRound()},1600);
 }
 
@@ -885,6 +1127,8 @@ function showYearResult(){
     document.querySelector('#year-screen .countdown-wrap').style.display='';
   },100);
   if(_fullDayMode){setTimeout(()=>advanceFullDay('yearguess',s),2400)}
+  // Auto-show summary after 2 seconds (unless Full Day mode is active)
+  else{setTimeout(()=>showQuizSummary(answeredItems), 2000)}
 }
 
 // ──────────────────────────────────────────────
@@ -932,6 +1176,61 @@ function showFullDayResult(){
   if(res.isNew&&total>0){pb.textContent=`🏆 Neuer Highscore: ${total}/12!`;pb.style.display='inline-block'}
   else if(res.prev!==null){pb.textContent=`Bisheriges Bestes heute: ${res.prev}/12`;pb.style.display='inline-block'}
   show('fullday-result');
+}
+
+// ──────────────────────────────────────────────
+// DAILY SCORE SYSTEM  (key: quiz_scores)
+// ──────────────────────────────────────────────
+const SCORE_KEY = 'quiz_scores';
+const MODE_MAX  = {de:4, world:4, history:4, collage:8};
+const TOTAL_MAX = 20; // 4+4+4+8
+
+function recordScore(mode, count){
+  const today = Q?.date || new Date().toISOString().slice(0,10);
+  let data = {};
+  try{ data = JSON.parse(localStorage.getItem(SCORE_KEY)||'{}'); }catch(e){}
+  if(!data[today]) data[today] = {};
+  // Only overwrite with a better score
+  const prev = data[today][mode] ?? -1;
+  if(count > prev) data[today][mode] = count;
+  localStorage.setItem(SCORE_KEY, JSON.stringify(data));
+  updateScoreWidget();
+}
+
+function getScoreStats(){
+  const today = Q?.date || new Date().toISOString().slice(0,10);
+  let data = {};
+  try{ data = JSON.parse(localStorage.getItem(SCORE_KEY)||'{}'); }catch(e){}
+  const todayScores = data[today] || {};
+  const todayTotal  = Object.values(todayScores).reduce((a,v)=>a+v, 0);
+
+  // All-time best single-day total
+  let highscore = 0;
+  for(const day of Object.values(data)){
+    const t = Object.values(day).reduce((a,v)=>a+v, 0);
+    if(t > highscore) highscore = t;
+  }
+
+  // Streak: consecutive days ending today with ≥1 mode played
+  const days = Object.keys(data).sort().reverse();
+  let streak = 0;
+  const todayMs = new Date(today).getTime();
+  for(let i=0; i<days.length; i++){
+    const diff = Math.round((todayMs - new Date(days[i]).getTime()) / 86400000);
+    if(diff === i && Object.keys(data[days[i]]).length > 0) streak++;
+    else break;
+  }
+
+  return{ todayTotal, highscore, streak };
+}
+
+function updateScoreWidget(){
+  const el = document.getElementById('score-widget');
+  if(!el) return;
+  const { todayTotal, highscore, streak } = getScoreStats();
+  document.getElementById('sw-today').textContent  = todayTotal + '/' + TOTAL_MAX + ' pts';
+  document.getElementById('sw-best').textContent   = '🏆 ' + highscore + ' pts';
+  document.getElementById('sw-streak').textContent = '🔥 ' + streak + ' day' + (streak!==1?'s':'');
 }
 
 // ── BOOT ──

@@ -532,6 +532,14 @@ if os.path.exists(JSON_PATH):
                         fname = os.path.basename(src)
                         shutil.copy2(src, os.path.join(archive_dir, fname))
                         info["image"] = f"images/{old_date}/{fname}"
+            # Copy + relink On This Day images
+            if old.get("onthisday"):
+                for item in old["onthisday"].get("events", []):
+                    src = os.path.join(WEBROOT, item["image"])
+                    if os.path.exists(src):
+                        fname = os.path.basename(src)
+                        shutil.copy2(src, os.path.join(archive_dir, fname))
+                        item["image"] = f"images/{old_date}/{fname}"
             # Write archived quiz-data-YYYY-MM-DD.json
             archive_json = os.path.join(WEBROOT, f"quiz-data-{old_date}.json")
             with open(archive_json, "w") as f:
@@ -615,6 +623,159 @@ history_distractor_items = [
 quiz_categories["history"] = history_items
 
 # ─────────────────────────────────────────────────────────────
+# GENERATE "ON THIS DAY" IMAGES (Wikipedia API)
+# ─────────────────────────────────────────────────────────────
+def fetch_onthisday_events():
+    """Fetch events from Wikipedia's On This Day API for today's date."""
+    month = datetime.date.today().month
+    day = datetime.date.today().day
+    url = f"https://api.wikimedia.org/feed/v1/wikipedia/en/onthisday/events/{month:02d}/{day:02d}"
+    
+    req = urllib.request.Request(url, headers={
+        'User-Agent': 'AINewsQuizBot/1.0 (OpenClaw; shelldon@professionalcrastination.de)'
+    })
+    
+    with urllib.request.urlopen(req, timeout=15) as resp:
+        data = json.loads(resp.read())
+    
+    return data['events']
+
+def select_otd_events(events):
+    """Select 4 main + 4 distractor events with visual potential."""
+    # Filter for events 500-2020 with pages/thumbnails
+    interesting = []
+    for evt in events:
+        year = evt.get('year', 0)
+        text = evt.get('text', '')
+        pages = evt.get('pages', [])
+        
+        if 500 <= year <= 2020 and len(pages) > 0:
+            # Score based on visual/historical keywords
+            keywords = ['emperor', 'king', 'queen', 'war', 'battle', 'discovered', 'founded',
+                       'independence', 'revolution', 'treaty', 'expedition', 'crowned',
+                       'built', 'conquest', 'marines', 'landing', 'attack', 'invasion',
+                       'signed', 'declared', 'assassinated', 'born', 'died']
+            score = sum(1 for kw in keywords if kw.lower() in text.lower())
+            interesting.append({
+                'year': year,
+                'text': text,
+                'pages': pages,
+                'score': score
+            })
+    
+    # Sort by score and year (prefer diverse time periods)
+    interesting.sort(key=lambda x: (x['score'], -x['year']), reverse=True)
+    
+    # Select 8 events spread across centuries
+    selected = []
+    used_centuries = set()
+    
+    for evt in interesting:
+        century = evt['year'] // 100
+        if century not in used_centuries or len(selected) >= 4:
+            selected.append(evt)
+            used_centuries.add(century)
+            if len(selected) == 8:
+                break
+    
+    # If we need more, add highest-scoring remaining
+    if len(selected) < 8:
+        for evt in interesting:
+            if evt not in selected:
+                selected.append(evt)
+                if len(selected) == 8:
+                    break
+    
+    return selected[:4], selected[4:8]  # (main, distractors)
+
+def create_otd_prompt(text, year):
+    """Create an AI image prompt from Wikipedia event text."""
+    # Clean up the text (remove references, excessive detail)
+    clean_text = text.split('.')[0]  # First sentence usually most important
+    
+    # Create a descriptive prompt based on the event
+    prompt = f"Historical scene from the year {year}: {clean_text}, "
+    prompt += "dramatic historical painting, photorealistic editorial illustration, "
+    prompt += "highly detailed, award-winning composition, cinematic lighting"
+    
+    return prompt
+
+# Generate On This Day quiz data
+otd_items = []
+otd_distractor_items = []
+
+try:
+    print("\n🗓️  FETCHING 'ON THIS DAY' EVENTS FROM WIKIPEDIA...")
+    all_events = fetch_onthisday_events()
+    print(f"   Found {len(all_events)} total events for {today}")
+    
+    main_events, distractor_events = select_otd_events(all_events)
+    print(f"   Selected {len(main_events)} main events + {len(distractor_events)} distractors\n")
+    
+    # Generate images for the 4 main events
+    for i, evt in enumerate(main_events):
+        style = rng.choice(ART_STYLES)
+        filename = f"otd{i+1}.png"
+        out_path = os.path.join(OUT_DIR, filename)
+        
+        # Create headline from event text
+        headline_text = evt['text'].split('.')[0]  # First sentence
+        if len(headline_text) > 100:
+            headline_text = headline_text[:97] + "..."
+        
+        if os.path.exists(out_path):
+            print(f"  ⏭  {filename} already exists, skipping")
+            otd_items.append({
+                "id": f"otd{i+1}",
+                "headline": headline_text,
+                "year": evt['year'],
+                "source": "Wikipedia",
+                "style": style["name"],
+                "image": f"images/{filename}"
+            })
+            continue
+        
+        # Create prompt
+        base_prompt = create_otd_prompt(evt['text'], evt['year'])
+        full_prompt = f"{base_prompt}, {style['suffix']}, highly detailed, award-winning composition"
+        
+        print(f"🗓️  [ON THIS DAY via Replicate/Flux] Year {evt['year']}: {headline_text[:60]}... [{style['name']}]")
+        
+        try:
+            image_path = generate_image_replicate(full_prompt, filename)
+            otd_items.append({
+                "id": f"otd{i+1}",
+                "headline": headline_text,
+                "year": evt['year'],
+                "source": "Wikipedia",
+                "style": style["name"],
+                "image": image_path
+            })
+        except Exception as e:
+            print(f"  ❌ Error: {e}")
+    
+    # Create distractor items (no images)
+    for i, evt in enumerate(distractor_events):
+        headline_text = evt['text'].split('.')[0]
+        if len(headline_text) > 100:
+            headline_text = headline_text[:97] + "..."
+        
+        otd_distractor_items.append({
+            "id": f"otdd{i+1}",
+            "headline": headline_text,
+            "year": evt['year'],
+            "source": "Wikipedia"
+        })
+    
+    print(f"\n✅ Generated {len(otd_items)} On This Day images")
+    print(f"   Years: {[it['year'] for it in otd_items]}")
+    print(f"   Styles: {[it['style'] for it in otd_items]}")
+
+except Exception as e:
+    print(f"\n⚠️  Failed to generate On This Day content: {e}")
+    print("   Continuing without otd data...")
+
+# ─────────────────────────────────────────────────────────────
 # GENERATE COLLAGE IMAGES
 # ─────────────────────────────────────────────────────────────
 quiz_collages = {}
@@ -643,6 +804,14 @@ quiz_data = {
     "distractors": {"history": history_distractor_items},
     "collages": quiz_collages
 }
+
+# Add On This Day data if we generated it
+if otd_items:
+    quiz_data["onthisday"] = {
+        "date": today,  # Store as YYYY-MM-DD for display
+        "events": otd_items,
+        "distractors": otd_distractor_items
+    }
 with open(JSON_PATH, "w") as f:
     json.dump(quiz_data, f, indent=2, ensure_ascii=False)
 
