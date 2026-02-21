@@ -210,6 +210,12 @@ header p{color:var(--muted);font-size:.9rem}
 }
 .sw-val{display:block;font-size:1rem;font-weight:700;color:var(--accent);line-height:1.25}
 .sw-label{font-size:.7rem;color:var(--muted);margin-top:.18rem;display:block}
+
+/* ── MOBILE: HIDE HEADER/MENU WHEN QUIZ ACTIVE ── */
+@media(max-width:768px) {
+  body.quiz-active header { display: none; }
+  body.quiz-active #menu { display: none; }
+}
 </style>
 </head>
 <body>
@@ -477,7 +483,7 @@ let answeredItems = []; // Track user answers for summary
 
 function shuffle(a){const b=[...a];for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]]}return b}
 
-function show(id){document.querySelectorAll('.screen,#menu').forEach(e=>e.classList.remove('show'));const el=document.getElementById(id);if(el.id==='menu')el.style.display='';else el.classList.add('show');window.scrollTo({top:0,behavior:'smooth'})}
+function show(id){document.querySelectorAll('.screen,#menu').forEach(e=>e.classList.remove('show'));const el=document.getElementById(id);if(el.id==='menu'){el.style.display='';document.body.classList.remove('quiz-active')}else{el.classList.add('show');document.body.classList.add('quiz-active')}window.scrollTo({top:0,behavior:'smooth'})}
 function goMenu(){stopTimer();stopYearTimer();_fullDayMode=false;show('menu');updateScoreWidget()}
 
 async function init(){
@@ -1009,7 +1015,9 @@ function showYearRound(){
   const r=yearRounds[yearIdx];
   document.getElementById('year-round-num').textContent=yearIdx+1;
   document.getElementById('year-img').src=r.item.image;
-  document.getElementById('year-event-name').textContent=r.item.headline;
+  // Strip year from headline for year-guessing mode (e.g. "Fall of Rome (476 AD)" → "Fall of Rome")
+  const cleanHeadline = r.item.headline.replace(/\s*\(\d{3,4}\s*(AD|BC)?\)/g, '');
+  document.getElementById('year-event-name').textContent=cleanHeadline;
   document.getElementById('year-art-badge').textContent=r.item.style?'🎨 '+r.item.style:'';
   document.getElementById('year-overlay').style.opacity='0';
   document.getElementById('year-overlay').textContent='';
