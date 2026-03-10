@@ -568,9 +568,9 @@ for cat_key, items in CATEGORIES.items():
             print(f"  ⏭  {filename} already exists, skipping")
             quiz_items.append({"id": item["id"], "headline": item["headline"], "source": item["source"], "image": f"images/{filename}"})
             continue
-        print(f"\n🖼  [{cat_key.upper()}] {item['headline'][:55]}...")
+        print(f"\n🖼  [{cat_key.upper()} via Replicate/Flux] {item['headline'][:55]}...")
         try:
-            image_path = generate_image(item["prompt"], filename)
+            image_path = generate_image_replicate(item["prompt"], filename)
             quiz_items.append({"id": item["id"], "headline": item["headline"], "source": item["source"], "image": image_path})
         except Exception as e:
             print(f"  ❌ Error: {e}")
